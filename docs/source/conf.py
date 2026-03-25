@@ -22,8 +22,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
-    "sphinx_autodoc_typehints",
-    "numpydoc",
 ]
 
 templates_path = ["_templates"]
@@ -35,20 +33,16 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_title = "qvartools"
 
-# -- Extension configuration -------------------------------------------------
+# -- Napoleon (NumPy-style docstrings) ---------------------------------------
 
-# Napoleon settings (NumPy-style docstrings)
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_preprocess_types = True
 
-# numpydoc settings
-numpydoc_show_class_members = True
-numpydoc_class_members_toctree = False
+# -- autodoc -----------------------------------------------------------------
 
-# autodoc settings
 autodoc_default_options = {
     "members": True,
     "undoc-members": False,
@@ -66,13 +60,15 @@ autodoc_mock_imports = [
     "cudaq",
 ]
 
-# autosummary settings
+# -- autosummary -------------------------------------------------------------
+
 autosummary_generate = True
 
-# intersphinx
+# -- intersphinx -------------------------------------------------------------
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
-    "torch": ("https://pytorch.org/docs/stable/", None),
+    "torch": ("https://docs.pytorch.org/docs/stable/", None),
 }

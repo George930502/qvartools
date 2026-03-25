@@ -25,13 +25,13 @@ TransformerNFSampler
     Transformer-based normalizing-flow sampler.
 """
 
-from qvartools.samplers.sampler import Sampler, SamplerResult
 from qvartools.samplers.classical.nf_sampler import NFSampler
-from qvartools.samplers.quantum.trotter_sampler import TrotterSampler
 from qvartools.samplers.classical.transformer_nf_sampler import (
     TransformerNFSampler,
     TransformerSamplerConfig,
 )
+from qvartools.samplers.quantum.trotter_sampler import TrotterSampler
+from qvartools.samplers.sampler import Sampler, SamplerResult
 
 __all__ = [
     "Sampler",

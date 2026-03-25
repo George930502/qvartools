@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -369,12 +369,12 @@ class PhysicsGuidedFlowTrainer:
         )
 
         # Accumulated basis
-        self.accumulated_basis: Optional[torch.Tensor] = None
+        self.accumulated_basis: torch.Tensor | None = None
 
         # Connection cache for avoiding recomputation of Hamiltonian connections.
         # Auto-scale max_cache_size to fit within UMA memory budget when the
         # Hamiltonian provides orbital/electron counts.
-        self.connection_cache: Optional[Any] = None
+        self.connection_cache: Any | None = None
         if config.use_connection_cache and ConnectionCache is not None:
             num_sites = hamiltonian.num_sites
             cache_size = config.max_cache_size
@@ -396,11 +396,11 @@ class PhysicsGuidedFlowTrainer:
         # torch.compile is disabled for NQS forward passes due to incompatibility
         # with the encode_configuration method's dynamic control flow and the
         # varying batch sizes used during local energy computation.
-        self._nqs_compiled: Optional[Any] = None
+        self._nqs_compiled: Any | None = None
 
         # Tracking
-        self.energy_ema: Optional[float] = None
-        self.history: Dict[str, list] = {
+        self.energy_ema: float | None = None
+        self.history: dict[str, list] = {
             "energies": [],
             "accumulated_energies": [],
             "teacher_losses": [],
@@ -416,7 +416,7 @@ class PhysicsGuidedFlowTrainer:
         self._patience_counter = 0
 
         # Essential configurations (HF + singles + doubles) for molecular systems
-        self._essential_configs: Optional[torch.Tensor] = None
+        self._essential_configs: torch.Tensor | None = None
         if config.inject_essential_configs and hasattr(hamiltonian, "n_alpha"):
             self._essential_configs = self._generate_essential_configs()
 
@@ -674,7 +674,7 @@ class PhysicsGuidedFlowTrainer:
 
         print(f"  Cached {cached} configurations ({self.connection_cache.stats()['size']} entries)")
 
-    def train(self) -> Dict[str, list]:
+    def train(self) -> dict[str, list]:
         """Run the full physics-guided co-training loop.
 
         Trains for up to ``config.num_epochs`` epochs with early stopping
@@ -747,7 +747,7 @@ class PhysicsGuidedFlowTrainer:
             self.nqs_scheduler.step()
 
             # Progress bar update with cache hit rate
-            postfix: Dict[str, str] = {
+            postfix: dict[str, str] = {
                 "E": f"{metrics['energy']:.4f}",
                 "unique": f"{metrics['unique_ratio']:.2f}",
                 "T_loss": f"{metrics['teacher_loss']:.4f}",
@@ -799,7 +799,7 @@ class PhysicsGuidedFlowTrainer:
 
         return self.history
 
-    def _train_epoch(self, epoch: int) -> Dict[str, float]:
+    def _train_epoch(self, epoch: int) -> dict[str, float]:
         """Execute a single training epoch.
 
         Samples configurations from the flow, computes the combined
@@ -822,7 +822,7 @@ class PhysicsGuidedFlowTrainer:
         self.flow.train()
         self.nqs.train()
 
-        total_metrics: Dict[str, float] = {
+        total_metrics: dict[str, float] = {
             "energy": 0.0,
             "teacher_loss": 0.0,
             "physics_loss": 0.0,
@@ -1151,7 +1151,7 @@ class PhysicsGuidedFlowTrainer:
 
     def _get_connections_batch(
         self, configs: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Get all off-diagonal Hamiltonian connections for a batch.
 
         Dispatches to the most efficient available backend: connection
@@ -1229,7 +1229,7 @@ class PhysicsGuidedFlowTrainer:
         nqs_probs: torch.Tensor,
         local_energies: torch.Tensor,
         energy: torch.Tensor,
-    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Compute the mixed-objective flow loss.
 
         ``L = w_t * L_teacher + w_p * L_physics - w_e * H(flow)``
@@ -1371,7 +1371,7 @@ class PhysicsGuidedFlowTrainer:
         # Use overflow-safe integer hash for fast deduplication
         if self.accumulated_basis is None:
             keys = config_integer_hash(new_configs)
-            seen: Dict[Any, bool] = {}
+            seen: dict[Any, bool] = {}
             unique_indices = []
             for i, k in enumerate(keys):
                 if k not in seen:

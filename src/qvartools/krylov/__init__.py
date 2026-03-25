@@ -26,12 +26,12 @@ KrylovBasisSampler
     Interface for sampling configurations from Krylov-evolved states.
 """
 
-from qvartools.krylov.basis.sampler import KrylovBasisSampler
 from qvartools.krylov.basis.flow_guided import FlowGuidedSKQD
+from qvartools.krylov.basis.sampler import KrylovBasisSampler
+from qvartools.krylov.basis.skqd import SampleBasedKrylovDiagonalization, SKQDConfig
 from qvartools.krylov.expansion.residual_config import ResidualExpansionConfig
 from qvartools.krylov.expansion.residual_expander import ResidualBasedExpander
 from qvartools.krylov.expansion.selected_ci_expander import SelectedCIExpander
-from qvartools.krylov.basis.skqd import SKQDConfig, SampleBasedKrylovDiagonalization
 
 __all__ = [
     "SKQDConfig",

@@ -8,8 +8,6 @@ filtering low-probability states, and computing basis-set overlap metrics.
 
 from __future__ import annotations
 
-from typing import Dict, List
-
 import numpy as np
 
 __all__ = [
@@ -77,7 +75,7 @@ def int_to_bitstring(value: int, num_bits: int) -> str:
 # ---------------------------------------------------------------------------
 
 def get_basis_states_as_array(
-    measurement_results: Dict[str, int],
+    measurement_results: dict[str, int],
     num_qubits: int,  # noqa: ARG001 -- kept for API compatibility
 ) -> np.ndarray:
     """Convert measurement results to an array of unique basis-state integers.
@@ -105,8 +103,8 @@ def get_basis_states_as_array(
 
 
 def calculate_cumulative_results(
-    all_measurement_results: List[Dict[str, int]],
-) -> List[Dict[str, int]]:
+    all_measurement_results: list[dict[str, int]],
+) -> list[dict[str, int]]:
     """Calculate cumulative measurement results across Krylov steps.
 
     For step *k*, the cumulative results include all unique bitstrings
@@ -132,8 +130,8 @@ def calculate_cumulative_results(
     >>> cumulative[1]
     {'00': 3, '01': 3, '10': 4}
     """
-    cumulative: List[Dict[str, int]] = []
-    all_counts: Dict[str, int] = {}
+    cumulative: list[dict[str, int]] = []
+    all_counts: dict[str, int] = {}
 
     for step_results in all_measurement_results:
         # Merge counts (immutable snapshot per step)
@@ -147,10 +145,10 @@ def calculate_cumulative_results(
 
 
 def filter_high_probability_states(
-    measurement_results: Dict[str, int],
+    measurement_results: dict[str, int],
     threshold: float = 0.0,
     max_states: int | None = None,
-) -> Dict[str, int]:
+) -> dict[str, int]:
     """Filter measurement results to keep only high-probability states.
 
     Parameters
@@ -245,7 +243,7 @@ def compute_basis_overlap(
 def estimate_ground_state_sparsity(
     ground_state: np.ndarray,
     threshold: float = 1e-6,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Estimate sparsity metrics of a ground-state wavefunction.
 
     Parameters

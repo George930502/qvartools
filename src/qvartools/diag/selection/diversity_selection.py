@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
 
 import torch
 
@@ -173,8 +172,8 @@ class DiversitySelector:
     def select(
         self,
         configs: torch.Tensor,
-        weights: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, Dict]:
+        weights: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, dict]:
         """Select a diverse subset of configurations.
 
         Parameters
@@ -217,7 +216,7 @@ class DiversitySelector:
         # Rank 4+ is a catch-all bucket
         max_cfg = self._config.max_configs
 
-        rank_quotas: Dict[int, int] = {}
+        rank_quotas: dict[int, int] = {}
         for rank_val, frac in rank_fractions.items():
             rank_quotas[rank_val] = max(1, int(frac * max_cfg))
         rank_quotas[4] = max(1, int(self._config.rank_4_plus_fraction * max_cfg))
@@ -230,8 +229,8 @@ class DiversitySelector:
 
         # --- Bucket and select ---
         selected_indices: list[int] = []
-        rank_pool_counts: Dict[int, int] = {}
-        rank_selected_counts: Dict[int, int] = {}
+        rank_pool_counts: dict[int, int] = {}
+        rank_selected_counts: dict[int, int] = {}
 
         # Bit-pack for fast Hamming if we have a minimum distance constraint
         packed = bitpack_configs(configs) if self._config.min_hamming_distance > 0 else None
@@ -301,7 +300,7 @@ class DiversitySelector:
     def _greedy_select(
         self,
         sorted_indices: torch.Tensor,
-        packed: Optional[torch.Tensor],
+        packed: torch.Tensor | None,
         quota: int,
     ) -> list[int]:
         """Greedily select configs by weight, enforcing minimum Hamming distance.

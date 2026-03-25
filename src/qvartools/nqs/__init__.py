@@ -28,10 +28,10 @@ compile_nqs
     Apply ``torch.compile`` to an NQS model with graceful fallback.
 """
 
-from qvartools.nqs.neural_state import NeuralQuantumState
 from qvartools.nqs.architectures.complex_nqs import ComplexNQS
-from qvartools.nqs.architectures.rbm import RBMQuantumState
 from qvartools.nqs.architectures.dense import DenseNQS, SignedDenseNQS, compile_nqs
+from qvartools.nqs.architectures.rbm import RBMQuantumState
+from qvartools.nqs.neural_state import NeuralQuantumState
 from qvartools.nqs.transformer.autoregressive import AutoregressiveTransformer
 
 __all__ = [

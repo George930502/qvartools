@@ -25,7 +25,7 @@ import logging
 import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _auto_scale_transformer(n_orbitals: int) -> Dict[str, int]:
+def _auto_scale_transformer(n_orbitals: int) -> dict[str, int]:
     """Choose transformer hyper-parameters based on system size.
 
     Parameters
@@ -115,14 +115,14 @@ class TransformerSamplerConfig:
     final_temperature: float = 0.3
 
     # Transformer architecture (None = auto-scale)
-    embed_dim: Optional[int] = None
-    n_heads: Optional[int] = None
-    n_layers: Optional[int] = None
+    embed_dim: int | None = None
+    n_heads: int | None = None
+    n_layers: int | None = None
 
     # NQS architecture
-    nqs_embed_dim: Optional[int] = None
-    nqs_n_heads: Optional[int] = None
-    nqs_n_layers: Optional[int] = None
+    nqs_embed_dim: int | None = None
+    nqs_n_heads: int | None = None
+    nqs_n_layers: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +219,7 @@ class TransformerNFSampler(Sampler):
     def __init__(
         self,
         hamiltonian,
-        config: Optional[TransformerSamplerConfig] = None,
+        config: TransformerSamplerConfig | None = None,
         device: str = "cpu",
     ) -> None:
         self.hamiltonian = hamiltonian
@@ -301,7 +301,9 @@ class TransformerNFSampler(Sampler):
         """
         # Try transformer NQS first
         try:
-            from qvartools.nqs.transformer.autoregressive import TransformerNQS  # noqa: WPS433
+            from qvartools.nqs.transformer.autoregressive import (
+                TransformerNQS,  # noqa: WPS433
+            )
 
             return TransformerNQS(
                 num_sites=n_sites,
@@ -321,7 +323,7 @@ class TransformerNFSampler(Sampler):
     # Training
     # ------------------------------------------------------------------
 
-    def train(self, verbose: bool = True) -> Dict[str, Any]:
+    def train(self, verbose: bool = True) -> dict[str, Any]:
         """Train the transformer and NQS via physics-guided training.
 
         Parameters
@@ -414,9 +416,9 @@ class TransformerNFSampler(Sampler):
         bitstrings = [
             "".join(str(int(b)) for b in row) for row in configs.cpu().int()
         ]
-        counts: Dict[str, int] = dict(Counter(bitstrings))
+        counts: dict[str, int] = dict(Counter(bitstrings))
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "n_raw_samples": n_samples,
             "n_unique": len(unique_configs),
             "unique_ratio": len(unique_configs) / max(n_samples, 1),

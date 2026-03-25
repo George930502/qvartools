@@ -11,8 +11,6 @@ particle-number-conserving normalizing flows:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -60,7 +58,7 @@ class GumbelTopK(nn.Module):
         self.min_temperature: float = min_temperature
 
     def forward(
-        self, logits: torch.Tensor, k: int, temperature: Optional[float] = None
+        self, logits: torch.Tensor, k: int, temperature: float | None = None
     ) -> torch.Tensor:
         """Select k elements via Gumbel-Softmax relaxation.
 
@@ -137,7 +135,7 @@ class SigmoidTopK(nn.Module):
         self.min_temperature: float = min_temperature
 
     def forward(
-        self, logits: torch.Tensor, k: int, temperature: Optional[float] = None
+        self, logits: torch.Tensor, k: int, temperature: float | None = None
     ) -> torch.Tensor:
         """Select k elements via sigmoid thresholding.
 

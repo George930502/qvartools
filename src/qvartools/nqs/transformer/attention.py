@@ -10,7 +10,6 @@ neural quantum state architecture.
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -74,8 +73,8 @@ class CausalSelfAttention(nn.Module):
 
         # KV cache state
         self._cache_enabled: bool = False
-        self._k_cache: Optional[torch.Tensor] = None
-        self._v_cache: Optional[torch.Tensor] = None
+        self._k_cache: torch.Tensor | None = None
+        self._v_cache: torch.Tensor | None = None
 
     def enable_cache(self) -> None:
         """Enable KV cache for autoregressive generation."""

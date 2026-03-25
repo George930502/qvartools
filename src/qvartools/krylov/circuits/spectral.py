@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 from itertools import combinations
 from math import comb
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -242,7 +242,7 @@ def _spectral_range_diagonal(
 # Public API
 # ---------------------------------------------------------------------------
 
-def compute_optimal_dt(hamiltonian: MolecularHamiltonian) -> Tuple[float, float]:
+def compute_optimal_dt(hamiltonian: MolecularHamiltonian) -> tuple[float, float]:
     """
     Compute optimal Krylov time step from spectral range of subspace Hamiltonian.
 

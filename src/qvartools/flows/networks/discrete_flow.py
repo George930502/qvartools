@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -84,7 +83,7 @@ class DiscreteFlowSampler(nn.Module):
         self,
         num_sites: int,
         num_coupling_layers: int = 6,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
         prior_std: float = 1.0,
         n_mc_samples: int = 100,
     ) -> None:
@@ -152,7 +151,7 @@ class DiscreteFlowSampler(nn.Module):
 
     def _forward_flow(
         self, z: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the forward (generative) direction of the flow.
 
         Parameters
@@ -195,7 +194,7 @@ class DiscreteFlowSampler(nn.Module):
 
     def _inverse_flow(
         self, y: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the inverse (inference) direction of the flow.
 
         Parameters
@@ -275,7 +274,7 @@ class DiscreteFlowSampler(nn.Module):
 
     def sample(
         self, batch_size: int
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Sample discrete binary configurations.
 
         Draws continuous samples from the flow, discretises them, and
@@ -368,7 +367,7 @@ class DiscreteFlowSampler(nn.Module):
 
     def forward(
         self, batch_size: int
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass: sample and compute log-probabilities.
 
         Parameters

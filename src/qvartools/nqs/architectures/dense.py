@@ -13,7 +13,6 @@ Also provides :func:`compile_nqs`, a utility that applies
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -77,10 +76,10 @@ def compile_nqs(
 
 def _build_mlp(
     input_dim: int,
-    hidden_dims: List[int],
+    hidden_dims: list[int],
     output_dim: int,
     activation: nn.Module = nn.ReLU(),
-    output_activation: Optional[nn.Module] = None,
+    output_activation: nn.Module | None = None,
 ) -> nn.Sequential:
     """Build a simple MLP as an ``nn.Sequential``.
 
@@ -160,7 +159,7 @@ class DenseNQS(NeuralQuantumState):
     def __init__(
         self,
         num_sites: int,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
         complex_output: bool = False,
     ) -> None:
         super().__init__(
@@ -184,7 +183,7 @@ class DenseNQS(NeuralQuantumState):
         self.log_amp_scale: nn.Parameter = nn.Parameter(torch.tensor(1.0))
 
         # Phase network (optional)
-        self.phase_net: Optional[nn.Sequential] = None
+        self.phase_net: nn.Sequential | None = None
         if complex_output:
             self.phase_net = _build_mlp(
                 input_dim=num_sites,
@@ -286,7 +285,7 @@ class SignedDenseNQS(NeuralQuantumState):
     def __init__(
         self,
         num_sites: int,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
     ) -> None:
         super().__init__(
             num_sites=num_sites,
@@ -317,8 +316,8 @@ class SignedDenseNQS(NeuralQuantumState):
         self.sign_head: nn.Linear = nn.Linear(feature_dim, 1)
 
         # Feature cache
-        self._cached_input_id: Optional[int] = None
-        self._cached_features: Optional[torch.Tensor] = None
+        self._cached_input_id: int | None = None
+        self._cached_features: torch.Tensor | None = None
 
     def _get_features(self, x: torch.Tensor) -> torch.Tensor:
         """Compute (or retrieve cached) shared features.

@@ -8,11 +8,10 @@ import torch
 
 from qvartools.hamiltonians import HeisenbergHamiltonian
 from qvartools.krylov.basis.skqd import (
-    SKQDConfig,
-    SampleBasedKrylovDiagonalization,
     FlowGuidedSKQD,
+    SampleBasedKrylovDiagonalization,
+    SKQDConfig,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

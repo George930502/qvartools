@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 
@@ -64,9 +64,9 @@ class SamplerResult:
     """
 
     configs: torch.Tensor
-    counts: Dict[str, int] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    log_probs: Optional[torch.Tensor] = None
+    counts: dict[str, int] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    log_probs: torch.Tensor | None = None
     wall_time: float = 0.0
 
 

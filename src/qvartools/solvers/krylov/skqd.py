@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Default configurations
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SKQD_CONFIG: Dict[str, Any] = {
+_DEFAULT_SKQD_CONFIG: dict[str, Any] = {
     "max_krylov_dim": 10,
     "time_step": 0.1,
     "shots_per_krylov": 1000,
@@ -43,7 +43,7 @@ _DEFAULT_SKQD_CONFIG: Dict[str, Any] = {
     "regularization": 1e-8,
 }
 
-_DEFAULT_TRAINING_CONFIG: Dict[str, Any] = {
+_DEFAULT_TRAINING_CONFIG: dict[str, Any] = {
     "samples_per_batch": 500,
     "num_batches": 10,
     "num_epochs": 200,
@@ -108,8 +108,8 @@ class SKQDSolver(Solver):
     def __init__(
         self,
         n_samples: int = 5000,
-        skqd_config: Optional[Dict[str, Any]] = None,
-        training_config: Optional[Dict[str, Any]] = None,
+        skqd_config: dict[str, Any] | None = None,
+        training_config: dict[str, Any] | None = None,
         device: str = "cpu",
     ) -> None:
         if n_samples < 1:
@@ -121,15 +121,15 @@ class SKQDSolver(Solver):
         merged_skqd = dict(_DEFAULT_SKQD_CONFIG)
         if skqd_config is not None:
             merged_skqd.update(skqd_config)
-        self.skqd_config: Dict[str, Any] = merged_skqd
+        self.skqd_config: dict[str, Any] = merged_skqd
 
         merged_train = dict(_DEFAULT_TRAINING_CONFIG)
         if training_config is not None:
             merged_train.update(training_config)
-        self.training_config: Dict[str, Any] = merged_train
+        self.training_config: dict[str, Any] = merged_train
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run the SKQD pipeline.
 
@@ -198,7 +198,7 @@ class SKQDSolver(Solver):
         diag_dim = skqd_result["basis_size"]
         wall_time = time.perf_counter() - t_start
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "training_history": history,
             "skqd_result": skqd_result,
             "nf_energy": skqd_result.get("nf_energy"),

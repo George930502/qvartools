@@ -5,7 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from qvartools.pipeline import FlowGuidedKrylovPipeline, PipelineConfig, run_molecular_benchmark
+from qvartools.pipeline import (
+    FlowGuidedKrylovPipeline,
+    PipelineConfig,
+    run_molecular_benchmark,
+)
 
 # Mark entire module as requiring PySCF
 pytestmark = pytest.mark.pyscf

@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -112,7 +111,7 @@ def _diagonalise_in_basis(
     basis: torch.Tensor,
     regularization: float = 1e-8,
     use_gpu: bool = True,
-) -> Tuple[float, np.ndarray]:
+) -> tuple[float, np.ndarray]:
     """Solve the eigenvalue problem in the given basis.
 
     When a CUDA device is available and ``use_gpu`` is ``True``, the
@@ -203,7 +202,7 @@ def _generate_candidate_configs(
         Candidate configurations not in the current basis,
         shape ``(n_candidates, num_sites)``.
     """
-    candidates: List[torch.Tensor] = []
+    candidates: list[torch.Tensor] = []
 
     # Pre-move basis to CPU once for Numba-based get_connections
     basis_cpu = basis.detach().cpu()

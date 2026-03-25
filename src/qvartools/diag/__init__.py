@@ -31,10 +31,6 @@ regularize_overlap_matrix
 """
 
 from qvartools.diag.eigen.davidson import DavidsonSolver
-from qvartools.diag.selection.diversity_selection import (
-    DiversityConfig,
-    DiversitySelector,
-)
 from qvartools.diag.eigen.eigenvalue import (
     compute_ground_state_energy,
     regularize_overlap_matrix,
@@ -43,6 +39,10 @@ from qvartools.diag.eigen.eigenvalue import (
 from qvartools.diag.eigen.projected_hamiltonian import (
     ProjectedHamiltonianBuilder,
     ProjectedHamiltonianConfig,
+)
+from qvartools.diag.selection.diversity_selection import (
+    DiversityConfig,
+    DiversitySelector,
 )
 
 __all__ = [

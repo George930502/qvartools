@@ -9,8 +9,6 @@ needed by :class:`~qvartools.pipeline.FlowGuidedKrylovPipeline`.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import List
-
 
 __all__ = [
     "PipelineConfig",
@@ -143,8 +141,8 @@ class PipelineConfig:
     use_particle_conserving_flow: bool = True
 
     # --- NF-NQS architecture ---
-    nf_hidden_dims: List[int] = field(default_factory=lambda: [256, 256])
-    nqs_hidden_dims: List[int] = field(default_factory=lambda: [256, 256, 256, 256])
+    nf_hidden_dims: list[int] = field(default_factory=lambda: [256, 256])
+    nqs_hidden_dims: list[int] = field(default_factory=lambda: [256, 256, 256, 256])
 
     # --- Training parameters ---
     samples_per_batch: int = 2000

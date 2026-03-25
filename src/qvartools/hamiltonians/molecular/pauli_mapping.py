@@ -18,7 +18,6 @@ References
 from __future__ import annotations
 
 import warnings
-from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -47,7 +46,7 @@ _PAULI_MULT = {
 _PHASE_TO_COMPLEX = {0: 1.0, 1: 1j, 2: -1.0, 3: -1j}
 
 
-def _multiply_pauli_strings(s1: str, s2: str) -> Tuple[complex, str]:
+def _multiply_pauli_strings(s1: str, s2: str) -> tuple[complex, str]:
     """Multiply two multi-qubit Pauli strings site-by-site.
 
     Applies the single-qubit Pauli multiplication table independently
@@ -113,7 +112,7 @@ class PauliSum:
 
     def __init__(self, n_qubits: int) -> None:
         self.n_qubits = n_qubits
-        self.terms: Dict[str, complex] = {}
+        self.terms: dict[str, complex] = {}
 
     def add_term(self, coeff: complex, pauli_string: str) -> None:
         """Add ``coeff * pauli_string`` to this operator.
@@ -134,7 +133,7 @@ class PauliSum:
         assert len(pauli_string) == self.n_qubits
         self.terms[pauli_string] = self.terms.get(pauli_string, 0.0) + coeff
 
-    def __iadd__(self, other: "PauliSum") -> "PauliSum":
+    def __iadd__(self, other: PauliSum) -> PauliSum:
         """Add all terms from *other* into this ``PauliSum`` in-place.
 
         Parameters
@@ -151,7 +150,7 @@ class PauliSum:
             self.terms[ps] = self.terms.get(ps, 0.0) + c
         return self
 
-    def scale(self, scalar: complex) -> "PauliSum":
+    def scale(self, scalar: complex) -> PauliSum:
         """Return a new ``PauliSum`` with all coefficients multiplied by *scalar*.
 
         Parameters
@@ -169,7 +168,7 @@ class PauliSum:
             result.terms[ps] = c * scalar
         return result
 
-    def multiply(self, other: "PauliSum") -> "PauliSum":
+    def multiply(self, other: PauliSum) -> PauliSum:
         """Compute the operator product ``self * other``.
 
         Each pair of Pauli strings is multiplied site-by-site using the
@@ -204,7 +203,7 @@ class PauliSum:
         """
         self.terms = {ps: c for ps, c in self.terms.items() if abs(c) > threshold}
 
-    def to_real_lists(self, threshold: float = 1e-12) -> Tuple[List[float], List[str], float]:
+    def to_real_lists(self, threshold: float = 1e-12) -> tuple[list[float], list[str], float]:
         """Export as real-valued coefficient lists, separating the constant.
 
         The all-identity Pauli string is extracted as a scalar constant.
@@ -235,8 +234,8 @@ class PauliSum:
         self.simplify(threshold)
         identity = "I" * self.n_qubits
 
-        coefficients: List[float] = []
-        pauli_words: List[str] = []
+        coefficients: list[float] = []
+        pauli_words: list[str] = []
         constant = 0.0
 
         for ps, c in self.terms.items():
@@ -458,7 +457,7 @@ def molecular_hamiltonian_to_pauli(
     h2e: np.ndarray,
     nuclear_repulsion: float,
     n_orbitals: int,
-) -> Tuple[List[float], List[str], float]:
+) -> tuple[list[float], list[str], float]:
     r"""Convert molecular integrals to Pauli representation via Jordan--Wigner.
 
     Qubit ordering matches the ``MolecularHamiltonian`` convention:
@@ -576,7 +575,7 @@ def heisenberg_hamiltonian_pauli(
     hx: np.ndarray | None = None,
     hy: np.ndarray | None = None,
     hz: np.ndarray | None = None,
-) -> Tuple[List[float], List[str], float]:
+) -> tuple[list[float], list[str], float]:
     r"""Heisenberg spin-chain Hamiltonian in Pauli string representation.
 
     Constructs the Pauli decomposition of
@@ -631,8 +630,8 @@ def heisenberg_hamiltonian_pauli(
     if hz is None:
         hz = np.ones(n_spins)
 
-    coefficients: List[float] = []
-    pauli_words: List[str] = []
+    coefficients: list[float] = []
+    pauli_words: list[str] = []
 
     # Nearest-neighbor interactions
     for i in range(n_spins - 1):

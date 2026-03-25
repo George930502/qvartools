@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import scipy.sparse
 import torch
@@ -74,7 +73,7 @@ class ProjectedHamiltonianConfig:
 # ---------------------------------------------------------------------------
 
 
-def _build_config_index(basis_states: torch.Tensor) -> Dict[int, int]:
+def _build_config_index(basis_states: torch.Tensor) -> dict[int, int]:
     """Build a hash map from configuration hash to basis index.
 
     Each configuration is converted to a unique integer hash by treating
@@ -161,7 +160,7 @@ class ProjectedHamiltonianBuilder:
     def __init__(
         self,
         hamiltonian: Hamiltonian,
-        config: Optional[ProjectedHamiltonianConfig] = None,
+        config: ProjectedHamiltonianConfig | None = None,
     ) -> None:
         self._hamiltonian = hamiltonian
         self._config = config if config is not None else ProjectedHamiltonianConfig()

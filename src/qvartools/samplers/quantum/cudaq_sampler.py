@@ -16,7 +16,7 @@ import logging
 import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -87,7 +87,7 @@ class CUDAQCircuitSampler(Sampler):
     def __init__(
         self,
         hamiltonian,
-        config: Optional[CUDAQSamplerConfig] = None,
+        config: CUDAQSamplerConfig | None = None,
     ) -> None:
         if not _HAS_CUDAQ:
             raise ImportError(
@@ -194,9 +194,9 @@ class CUDAQCircuitSampler(Sampler):
         bitstrings = [
             "".join(str(int(b)) for b in row) for row in configs.int()
         ]
-        counts: Dict[str, int] = dict(Counter(bitstrings))
+        counts: dict[str, int] = dict(Counter(bitstrings))
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "n_raw_samples": n_samples,
             "n_unique": len(unique_configs),
             "unique_ratio": len(unique_configs) / max(n_samples, 1),

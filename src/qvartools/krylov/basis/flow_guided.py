@@ -15,15 +15,15 @@ FlowGuidedSKQD
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import torch
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
 from qvartools.krylov.basis.skqd import (
-    SKQDConfig,
     SampleBasedKrylovDiagonalization,
+    SKQDConfig,
     _build_projected_matrices,
     _solve_generalised_eigenproblem,
 )
@@ -72,8 +72,8 @@ class FlowGuidedSKQD:
         hamiltonian: Hamiltonian,
         config: SKQDConfig,
         nf_basis: torch.Tensor,
-        nf_basis_weights: Optional[torch.Tensor] = None,
-        initial_state: Optional[np.ndarray] = None,
+        nf_basis_weights: torch.Tensor | None = None,
+        initial_state: np.ndarray | None = None,
     ) -> None:
         if nf_basis.ndim != 2:
             raise ValueError(
@@ -121,7 +121,7 @@ class FlowGuidedSKQD:
             return self._skqd.extract_projected_submatrix(configs)
         return _build_projected_matrices(self.hamiltonian, configs)
 
-    def run_with_nf(self, progress: bool = False) -> Dict[str, Any]:
+    def run_with_nf(self, progress: bool = False) -> dict[str, Any]:
         """Run SKQD with NF basis seeding.
 
         Parameters
@@ -146,7 +146,7 @@ class FlowGuidedSKQD:
         """
         # ---- Step 1: start with NF basis ----
         all_configs = torch.unique(self.nf_basis, dim=0)
-        energies_per_step: List[float] = []
+        energies_per_step: list[float] = []
 
         h_proj, s_proj = self._build_matrices(all_configs)
         eigenvalues, _ = _solve_generalised_eigenproblem(

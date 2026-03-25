@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import Counter
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -75,7 +75,7 @@ class TrotterSampler(Sampler):
         hamiltonian: Hamiltonian,
         n_trotter_steps: int = 10,
         time_step: float = 0.1,
-        initial_state: Optional[np.ndarray] = None,
+        initial_state: np.ndarray | None = None,
     ) -> None:
         if n_trotter_steps < 1:
             raise ValueError(
@@ -190,7 +190,7 @@ class TrotterSampler(Sampler):
         unique_indices = np.unique(indices)
         sample_time = time.perf_counter() - t_start
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "n_unique": len(unique_indices),
             "unique_ratio": len(unique_indices) / max(n_samples, 1),
             "sample_time": sample_time,

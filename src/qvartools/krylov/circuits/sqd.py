@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -120,14 +120,14 @@ class SQDSolver:
     from the IBM quantum-centric supercomputer paper.
     """
 
-    def __init__(self, hamiltonian: Any, config: Optional[SQDConfig] = None):
+    def __init__(self, hamiltonian: Any, config: SQDConfig | None = None):
         self.hamiltonian = hamiltonian
         self.config = config or SQDConfig()
         self.num_sites = hamiltonian.num_sites
 
         # Hamiltonian cache: avoids rebuilding H matrix for identical batches
         # across self-consistent iterations (B1 optimization)
-        self._h_cache: Dict[int, Tuple[torch.Tensor, torch.Tensor]] = {}
+        self._h_cache: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
 
         # Molecular properties
         self._is_molecular = hasattr(hamiltonian, "n_alpha")
@@ -142,7 +142,7 @@ class SQDSolver:
             self.n_orbitals = self.num_sites // 2
             self.n_electrons = None
 
-    def run(self, nf_basis: torch.Tensor, progress: bool = True) -> Dict[str, Any]:
+    def run(self, nf_basis: torch.Tensor, progress: bool = True) -> dict[str, Any]:
         """
         Run SQD algorithm on NF-NQS sampled configurations.
 
@@ -205,7 +205,7 @@ class SQDSolver:
         # Step 3: Self-consistent loop
         all_configs = valid_configs
         best_energy = float("inf")
-        best_results: Optional[List[Dict[str, Any]]] = None
+        best_results: list[dict[str, Any]] | None = None
         sc_iter = 0
 
         for sc_iter in range(max(1, cfg.self_consistent_iters)):
@@ -245,7 +245,7 @@ class SQDSolver:
             batches = self._create_batches(all_configs, batch_size, cfg.num_batches)
 
             # Diagonalize each batch
-            batch_results: List[Dict[str, Any]] = []
+            batch_results: list[dict[str, Any]] = []
             for k, batch in enumerate(batches):
                 result = self._diagonalize_batch(batch, k)
                 batch_results.append(result)
@@ -316,7 +316,7 @@ class SQDSolver:
 
     def _filter_particle_number(
         self, configs: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Split configs into correct and incorrect particle number sets."""
         if not self._is_molecular:
             return configs, torch.empty(0, self.num_sites, device=configs.device)
@@ -463,7 +463,7 @@ class SQDSolver:
         configs: torch.Tensor,
         batch_size: int,
         num_batches: int,
-    ) -> List[torch.Tensor]:
+    ) -> list[torch.Tensor]:
         """
         Create K batches of configurations.
 
@@ -481,7 +481,7 @@ class SQDSolver:
         # Identify essential config indices (for guaranteed inclusion in batches)
         essential_mask = self._identify_essential_configs(configs)
 
-        batches: List[torch.Tensor] = []
+        batches: list[torch.Tensor] = []
 
         for k in range(num_batches):
             if n_configs <= batch_size:
@@ -669,7 +669,7 @@ class SQDSolver:
             beta_expanded = unique_beta.repeat(n_alpha_unique, 1)
             batch = torch.cat([alpha_expanded, beta_expanded], dim=1)
         else:
-            combos: List[torch.Tensor] = []
+            combos: list[torch.Tensor] = []
             gen2 = torch.Generator(device="cpu")
             gen2.manual_seed(137 + batch_index)
             for _ in range(max_combos):
@@ -697,7 +697,7 @@ class SQDSolver:
 
     def _diagonalize_batch(
         self, batch: torch.Tensor, batch_index: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Project Hamiltonian into batch subspace and diagonalize.
 
@@ -841,7 +841,7 @@ class SQDSolver:
         return S2
 
     def _compute_orbital_occupancies(
-        self, batch_results: List[Dict[str, Any]]
+        self, batch_results: list[dict[str, Any]]
     ) -> np.ndarray:
         """
         Compute average orbital occupancies from batch eigenstates.
@@ -851,7 +851,7 @@ class SQDSolver:
         GPU-accelerated: eigenvectors and configs stay on GPU for the matmul,
         only the final (num_sites,) result is transferred to CPU.
         """
-        occupancies: Optional[torch.Tensor] = None
+        occupancies: torch.Tensor | None = None
         n_valid = 0
 
         for result in batch_results:
@@ -882,16 +882,16 @@ class SQDSolver:
         return occupancies.detach().cpu().numpy()
 
     def _energy_variance_extrapolation(
-        self, batch_results: List[Dict[str, Any]]
-    ) -> Tuple[Optional[float], Dict[str, Any]]:
+        self, batch_results: list[dict[str, Any]]
+    ) -> tuple[float | None, dict[str, Any]]:
         """
         Energy-variance extrapolation across batches.
 
         Linear fit: delta_E ~ a * (Delta_H / E^2)
         Extrapolate to Delta_H = 0 to estimate true ground state energy.
         """
-        energies_list: List[float] = []
-        variances_list: List[float] = []
+        energies_list: list[float] = []
+        variances_list: list[float] = []
 
         for r in batch_results:
             if r["energy"] != float("inf") and r["variance"] != float("inf"):

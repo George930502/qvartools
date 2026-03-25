@@ -8,7 +8,6 @@ import torch
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian, PauliString
 
-
 # ---------------------------------------------------------------------------
 # Concrete Hamiltonian for testing the ABC helpers
 # ---------------------------------------------------------------------------

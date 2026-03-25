@@ -11,7 +11,6 @@ returns a populated ``MolecularIntegrals`` instance.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import numpy as np
 
@@ -103,7 +102,7 @@ class MolecularIntegrals:
 
 
 def compute_molecular_integrals(
-    geometry: List[Tuple[str, Tuple[float, float, float]]],
+    geometry: list[tuple[str, tuple[float, float, float]]],
     basis: str = "sto-3g",
     charge: int = 0,
     spin: int = 0,

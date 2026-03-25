@@ -20,7 +20,6 @@ gpu_solve_fermion
 from __future__ import annotations
 
 import logging
-from typing import Tuple
 
 import numpy as np
 
@@ -50,7 +49,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-def gpu_eigh(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def gpu_eigh(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Compute full eigendecomposition of a dense Hermitian matrix.
 
     Attempts CuPy GPU acceleration; falls back to NumPy on CPU if CuPy
@@ -96,7 +95,7 @@ def gpu_eigh(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 def gpu_eigsh(
     matrix: np.ndarray, k: int = 6
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute the lowest *k* eigenvalues of a sparse Hermitian matrix.
 
     Attempts CuPy sparse eigendecomposition; falls back to
@@ -123,8 +122,8 @@ def gpu_eigsh(
     """
     if _HAS_CUPY:
         try:
-            import cupyx.scipy.sparse.linalg as cusp_linalg  # type: ignore[import-untyped]
             import cupyx.scipy.sparse as cusp_sparse  # type: ignore[import-untyped]
+            import cupyx.scipy.sparse.linalg as cusp_linalg  # type: ignore[import-untyped]
             import scipy.sparse
 
             if scipy.sparse.issparse(matrix):
@@ -144,8 +143,8 @@ def gpu_eigsh(
         except Exception as exc:
             logger.warning("CuPy eigsh failed (%s), falling back to SciPy.", exc)
 
-    from scipy.sparse.linalg import eigsh as scipy_eigsh
     import scipy.sparse
+    from scipy.sparse.linalg import eigsh as scipy_eigsh
 
     if not scipy.sparse.issparse(matrix):
         matrix = scipy.sparse.csr_matrix(matrix)

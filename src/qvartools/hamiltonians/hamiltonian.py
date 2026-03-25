@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 import numpy as np
 import torch
@@ -98,7 +97,7 @@ class Hamiltonian(ABC):
     @abstractmethod
     def get_connections(
         self, config: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return all states connected to *config* by the Hamiltonian.
 
         Parameters
@@ -249,7 +248,7 @@ class Hamiltonian(ABC):
 
         return h_matrix
 
-    def to_sparse(self, device: str = "cpu") -> "scipy.sparse.csr_matrix":  # noqa: F821
+    def to_sparse(self, device: str = "cpu") -> scipy.sparse.csr_matrix:  # noqa: F821
         """Build a SciPy CSR sparse Hamiltonian matrix.
 
         Parameters
@@ -293,7 +292,7 @@ class Hamiltonian(ABC):
 
     def exact_ground_state(
         self, device: str = "cpu"
-    ) -> Tuple[float, torch.Tensor]:
+    ) -> tuple[float, torch.Tensor]:
         """Compute the exact ground state via full diagonalisation.
 
         Parameters
@@ -324,7 +323,7 @@ class Hamiltonian(ABC):
 
     def ground_state_sparse(
         self, k: int = 1, device: str = "cpu"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Compute the lowest *k* eigenstates via sparse diagonalisation.
 
         Uses :func:`scipy.sparse.linalg.eigsh` with ``which='SA'``.

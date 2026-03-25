@@ -21,7 +21,7 @@ regularize_overlap_matrix
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional, Tuple, Union
+from typing import Union
 
 import numpy as np
 import scipy.linalg
@@ -52,7 +52,7 @@ def solve_generalized_eigenvalue(
     k: int = 1,
     which: str = "SA",
     use_gpu: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Solve the generalized eigenvalue problem Hv = ESv.
 
     Dispatches to the appropriate backend depending on matrix format and
@@ -128,7 +128,7 @@ def _solve_dense(
     H: _MatrixLike,
     S: _MatrixLike,
     k: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Solve with scipy.linalg.eigh (dense, full spectrum then truncate).
 
     Parameters
@@ -160,7 +160,7 @@ def _solve_sparse(
     S: _MatrixLike,
     k: int,
     which: str,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Solve with scipy.sparse.linalg.eigsh (sparse, iterative).
 
     Parameters
@@ -202,7 +202,7 @@ def _solve_gpu(
     H: _MatrixLike,
     S: _MatrixLike,
     k: int,
-) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+) -> tuple[np.ndarray, np.ndarray] | None:
     """Attempt GPU solve via CuPy.
 
     Parameters
@@ -278,7 +278,7 @@ def analyze_spectrum(
     H: _MatrixLike,
     k: int = 6,
     use_gpu: bool = False,
-) -> Dict:
+) -> dict:
     """Compute spectral statistics of a Hamiltonian.
 
     Parameters

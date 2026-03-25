@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -105,7 +105,7 @@ class SQDBatchedSolver(Solver):
     def __init__(
         self,
         sampler: Any,
-        config: Optional[SQDBatchedConfig] = None,
+        config: SQDBatchedConfig | None = None,
     ) -> None:
         self.sampler = sampler
         self.config = config or SQDBatchedConfig()
@@ -115,7 +115,7 @@ class SQDBatchedSolver(Solver):
     # ------------------------------------------------------------------
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run batched SQD and return the ground-state energy estimate.
 

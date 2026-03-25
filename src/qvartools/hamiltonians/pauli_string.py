@@ -9,8 +9,6 @@ application to computational-basis states and diagonal detection.
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
-
 import torch
 
 __all__ = [
@@ -52,20 +50,20 @@ class PauliString:
     _VALID_PAULIS = frozenset({"I", "X", "Y", "Z"})
 
     def __init__(
-        self, paulis: List[str], coefficient: complex = 1.0
+        self, paulis: list[str], coefficient: complex = 1.0
     ) -> None:
         for p in paulis:
             if p not in self._VALID_PAULIS:
                 raise ValueError(
                     f"Invalid Pauli label '{p}'. Must be one of {sorted(self._VALID_PAULIS)}."
                 )
-        self.paulis: List[str] = list(paulis)
+        self.paulis: list[str] = list(paulis)
         self.coefficient: complex = complex(coefficient)
         self.num_qubits: int = len(paulis)
 
     def apply(
         self, config: torch.Tensor
-    ) -> Tuple[Optional[torch.Tensor], complex]:
+    ) -> tuple[torch.Tensor | None, complex]:
         """Apply this Pauli string to a computational-basis state.
 
         The computational basis is ``|0⟩, |1⟩`` per qubit.  The rules are:

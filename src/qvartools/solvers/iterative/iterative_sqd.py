@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import scipy.sparse
@@ -86,7 +86,7 @@ class IterativeNFSQDSolver(Solver):
         self,
         n_iterations: int = 5,
         n_samples: int = 2000,
-        training_config: Optional[Dict[str, Any]] = None,
+        training_config: dict[str, Any] | None = None,
         convergence_tol: float = 1e-6,
         device: str = "cpu",
     ) -> None:
@@ -103,10 +103,10 @@ class IterativeNFSQDSolver(Solver):
         merged = dict(_DEFAULT_TRAINING_CONFIG)
         if training_config is not None:
             merged.update(training_config)
-        self.training_config: Dict[str, Any] = merged
+        self.training_config: dict[str, Any] = merged
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run the iterative NF-SQD pipeline.
 
@@ -122,24 +122,24 @@ class IterativeNFSQDSolver(Solver):
         SolverResult
             Best energy across iterations with full history in metadata.
         """
+        from qvartools.diag import (
+            ProjectedHamiltonianBuilder,
+            solve_generalized_eigenvalue,
+        )
         from qvartools.flows import (
             PhysicsGuidedConfig,
             PhysicsGuidedFlowTrainer,
         )
         from qvartools.nqs import DenseNQS
-        from qvartools.diag import (
-            ProjectedHamiltonianBuilder,
-            solve_generalized_eigenvalue,
-        )
 
         t_start = time.perf_counter()
         n_qubits = mol_info["n_qubits"]
 
-        energies: List[float] = []
-        basis_sizes: List[int] = []
+        energies: list[float] = []
+        basis_sizes: list[int] = []
         best_energy = float("inf")
-        accumulated_basis: Optional[torch.Tensor] = None
-        prev_eigvec: Optional[np.ndarray] = None
+        accumulated_basis: torch.Tensor | None = None
+        prev_eigvec: np.ndarray | None = None
 
         converged = False
 
@@ -227,7 +227,7 @@ class IterativeNFSQDSolver(Solver):
         wall_time = time.perf_counter() - t_start
         diag_dim = basis_sizes[-1] if basis_sizes else 0
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "energies_per_iteration": energies,
             "basis_sizes_per_iteration": basis_sizes,
             "n_iterations_run": len(energies),

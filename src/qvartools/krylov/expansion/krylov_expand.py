@@ -64,7 +64,7 @@ def expand_basis_via_connections(
     basis: torch.Tensor,
     hamiltonian: Any,
     max_new: int = 500,
-    n_ref: "int | None" = None,
+    n_ref: int | None = None,
     coupling_rank: bool = True,
 ) -> torch.Tensor:
     """Expand a configuration basis by following Hamiltonian connections.
@@ -176,7 +176,7 @@ def _collect_connections(
     refs: torch.Tensor,
     hamiltonian: Any,
     existing_keys: set,
-) -> "tuple[dict, dict]":
+) -> tuple[dict, dict]:
     """Collect connected configurations from reference states.
 
     For each reference configuration, retrieves Hamiltonian-connected
@@ -238,7 +238,7 @@ def _truncate_by_coupling(
     couplings: np.ndarray,
     max_new: int,
     coupling_rank: bool,
-) -> "tuple[torch.Tensor, np.ndarray]":
+) -> tuple[torch.Tensor, np.ndarray]:
     """Keep at most ``max_new`` configurations ranked by coupling strength.
 
     Parameters

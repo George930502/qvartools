@@ -41,16 +41,16 @@ IterativeNFSKQDSolver
     Hardware-informed iterative NF-SKQD with eigenvector feedback.
 """
 
-from qvartools.solvers.solver import Solver, SolverResult
-from qvartools.solvers.reference.ccsd import CCSDSolver
-from qvartools.solvers.subspace.cipsi import CIPSISolver
-from qvartools.solvers.krylov.dci_skqd import DCISKQDSolverB, DCISKQDSolverC
-from qvartools.solvers.reference.fci import FCISolver
 from qvartools.solvers.iterative.iterative_skqd import IterativeNFSKQDSolver
 from qvartools.solvers.iterative.iterative_sqd import IterativeNFSQDSolver
+from qvartools.solvers.krylov.dci_skqd import DCISKQDSolverB, DCISKQDSolverC
 from qvartools.solvers.krylov.nf_skqd import NFSKQDSolver
 from qvartools.solvers.krylov.skqd import SKQDSolver
 from qvartools.solvers.krylov.skqd_expansion import SKQDSolverB, SKQDSolverC
+from qvartools.solvers.reference.ccsd import CCSDSolver
+from qvartools.solvers.reference.fci import FCISolver
+from qvartools.solvers.solver import Solver, SolverResult
+from qvartools.solvers.subspace.cipsi import CIPSISolver
 from qvartools.solvers.subspace.sqd import SQDSolver
 from qvartools.solvers.subspace.sqd_batched import SQDBatchedSolver
 

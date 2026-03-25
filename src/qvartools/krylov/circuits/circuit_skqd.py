@@ -23,7 +23,7 @@ Reference:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -59,7 +59,7 @@ __all__ = [
 # Use torch.Tensor.bitwise_count if available (PyTorch 2.3+), else byte LUT
 _HAS_BITWISE_COUNT = hasattr(torch.Tensor, "bitwise_count")
 
-_PARITY_LUT_CACHE: Dict[torch.device, torch.Tensor] = {}
+_PARITY_LUT_CACHE: dict[torch.device, torch.Tensor] = {}
 
 
 def _get_parity_lut(device: torch.device) -> torch.Tensor:
@@ -313,10 +313,10 @@ TROTTER_UNITARY_DIM_LIMIT = 8192  # ~13 qubits, U is ~1GB
 # GPU Pauli matrices (cached, shared across instances)
 # ---------------------------------------------------------------------------
 
-_PAULI_CACHE: Dict[torch.device, Dict[str, torch.Tensor]] = {}
+_PAULI_CACHE: dict[torch.device, dict[str, torch.Tensor]] = {}
 
 
-def _get_pauli_matrices(device: torch.device) -> Dict[str, torch.Tensor]:
+def _get_pauli_matrices(device: torch.device) -> dict[str, torch.Tensor]:
     """Get single-qubit Pauli matrices on the specified device (cached)."""
     if device not in _PAULI_CACHE:
         _PAULI_CACHE[device] = {
@@ -386,13 +386,13 @@ class QuantumCircuitSKQD:
 
     def __init__(
         self,
-        pauli_coefficients: List[float],
-        pauli_words: List[str],
+        pauli_coefficients: list[float],
+        pauli_words: list[str],
         n_qubits: int,
-        config: Optional[QuantumSKQDConfig] = None,
+        config: QuantumSKQDConfig | None = None,
         constant_energy: float = 0.0,
         hamiltonian: Any = None,
-        initial_state_vector: Optional[np.ndarray] = None,
+        initial_state_vector: np.ndarray | None = None,
     ):
         self.pauli_coefficients = pauli_coefficients
         self.pauli_words = pauli_words
@@ -412,13 +412,13 @@ class QuantumCircuitSKQD:
         )
 
         # Cached GPU tensors (lazy init)
-        self._H_pauli_gpu: Optional[torch.Tensor] = None
-        self._trotter_U_gpu: Optional[torch.Tensor] = None  # Combined Trotter unitary
-        self._psi0_gpu: Optional[torch.Tensor] = None
+        self._H_pauli_gpu: torch.Tensor | None = None
+        self._trotter_U_gpu: torch.Tensor | None = None  # Combined Trotter unitary
+        self._psi0_gpu: torch.Tensor | None = None
 
         # State caching for Krylov evolution (Phase 1 optimization)
-        self._cached_exact_states: Dict[int, torch.Tensor] = {}
-        self._cached_trotter_states: Dict[int, torch.Tensor] = {}
+        self._cached_exact_states: dict[int, torch.Tensor] = {}
+        self._cached_trotter_states: dict[int, torch.Tensor] = {}
 
         # Initialize CUDA-Q target ONCE (not per-sample call)
         self._cudaq_initialized = False
@@ -730,7 +730,7 @@ class QuantumCircuitSKQD:
         self._kernel_neel = krylov_circuit_neel
         self._cudaq_kernels_built = True
 
-    def _sample_cudaq(self, krylov_power: int) -> Dict[str, int]:
+    def _sample_cudaq(self, krylov_power: int) -> dict[str, int]:
         """
         Sample from Krylov state U^k|psi_0> using CUDA-Q circuit simulation.
         """
@@ -799,7 +799,7 @@ class QuantumCircuitSKQD:
                     psi = self._apply_pauli_exp_to_state(psi, k, coeff)
         return psi
 
-    def _sample_classical_trotterized(self, krylov_power: int) -> Dict[str, int]:
+    def _sample_classical_trotterized(self, krylov_power: int) -> dict[str, int]:
         """
         Classical fallback: Trotterized state-vector evolution on GPU.
 
@@ -1396,7 +1396,7 @@ class QuantumCircuitSKQD:
             # On CPU, use lowmem for >4 GB V matrix
             return v_matrix_bytes > 4 * 1024**3
 
-    def _sample_exact(self, krylov_power: int) -> Dict[str, int]:
+    def _sample_exact(self, krylov_power: int) -> dict[str, int]:
         """
         Exact time evolution in full 2^n Hilbert space via Lanczos.
 
@@ -1444,7 +1444,7 @@ class QuantumCircuitSKQD:
 
         return self._sample_from_state(psi, krylov_power)
 
-    def _sample_from_state(self, psi: torch.Tensor, krylov_power: int) -> Dict[str, int]:
+    def _sample_from_state(self, psi: torch.Tensor, krylov_power: int) -> dict[str, int]:
         """Shared sampling logic: |psi|^2 -> multinomial -> bitstring counts."""
         probs = torch.abs(psi) ** 2
         probs = probs / probs.sum()
@@ -1465,7 +1465,7 @@ class QuantumCircuitSKQD:
         unique_cpu = unique.cpu().numpy()
         counts_cpu = counts.cpu().numpy()
 
-        results: Dict[str, int] = {}
+        results: dict[str, int] = {}
         for idx, count in zip(unique_cpu, counts_cpu):
             bitstring = format(int(idx), f"0{self.n_qubits}b")
             results[bitstring] = int(count)
@@ -1478,7 +1478,7 @@ class QuantumCircuitSKQD:
 
     def generate_krylov_samples(
         self, progress: bool = True
-    ) -> Tuple[List[Dict[str, int]], List[Dict[str, int]]]:
+    ) -> tuple[list[dict[str, int]], list[dict[str, int]]]:
         """
         Generate samples from each Krylov state and build cumulative basis.
 
@@ -1523,9 +1523,9 @@ class QuantumCircuitSKQD:
             f"T/step: {cfg.total_evolution_time:.6f}, shots: {cfg.shots:,}"
         )
 
-        all_samples: List[Dict[str, int]] = []
-        cumulative: Dict[str, int] = {}
-        cumulative_results: List[Dict[str, int]] = []
+        all_samples: list[dict[str, int]] = []
+        cumulative: dict[str, int] = {}
+        cumulative_results: list[dict[str, int]] = []
 
         # Pre-compute essential configs (HF + singles + doubles) for injection
         essential_bitstrings = self._get_essential_bitstrings()
@@ -1557,7 +1557,7 @@ class QuantumCircuitSKQD:
 
         return all_samples, cumulative_results
 
-    def _get_essential_bitstrings(self) -> List[str]:
+    def _get_essential_bitstrings(self) -> list[str]:
         """Generate HF + single + double excitation bitstrings for config injection."""
         if self.hamiltonian is None or not hasattr(self.hamiltonian, "n_orbitals"):
             return []
@@ -1637,7 +1637,7 @@ class QuantumCircuitSKQD:
         # Deduplicate
         return list(set(bitstrings))
 
-    def _basis_from_samples(self, sample_dict: Dict[str, int]) -> torch.Tensor:
+    def _basis_from_samples(self, sample_dict: dict[str, int]) -> torch.Tensor:
         """Convert sample dictionary to basis state tensor on GPU (vectorized)."""
         bitstrings = list(sample_dict.keys())
         n = len(bitstrings)
@@ -1649,7 +1649,7 @@ class QuantumCircuitSKQD:
         basis = torch.from_numpy(flat.reshape(n, nq).astype(np.int64)).to(self._device)
         return basis
 
-    def compute_energies(self, progress: bool = True) -> List[float]:
+    def compute_energies(self, progress: bool = True) -> list[float]:
         """
         Compute ground state energy at each Krylov dimension.
 
@@ -1665,7 +1665,7 @@ class QuantumCircuitSKQD:
             raise RuntimeError("Call generate_krylov_samples() first")
 
         max_k = self.config.max_krylov_dim
-        energies: List[float] = []
+        energies: list[float] = []
 
         for k in range(1, max_k):
             cum_samples = self._cumulative_results[k]
@@ -1804,7 +1804,7 @@ class QuantumCircuitSKQD:
     # Full run
     # ------------------------------------------------------------------
 
-    def run(self, progress: bool = True) -> Dict[str, Any]:
+    def run(self, progress: bool = True) -> dict[str, Any]:
         """
         Run full quantum circuit SKQD pipeline.
 
@@ -1859,8 +1859,8 @@ class QuantumCircuitSKQD:
     def from_molecular_hamiltonian(
         cls,
         hamiltonian: Any,
-        config: Optional[QuantumSKQDConfig] = None,
-    ) -> "QuantumCircuitSKQD":
+        config: QuantumSKQDConfig | None = None,
+    ) -> QuantumCircuitSKQD:
         """
         Create QuantumCircuitSKQD from a MolecularHamiltonian.
 
@@ -1902,8 +1902,8 @@ class QuantumCircuitSKQD:
         Jx: float = 1.0,
         Jy: float = 1.0,
         Jz: float = 1.0,
-        config: Optional[QuantumSKQDConfig] = None,
-    ) -> "QuantumCircuitSKQD":
+        config: QuantumSKQDConfig | None = None,
+    ) -> QuantumCircuitSKQD:
         """
         Create QuantumCircuitSKQD for a Heisenberg spin chain.
 

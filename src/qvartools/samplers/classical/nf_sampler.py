@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import Counter
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -70,13 +70,13 @@ class NFSampler(Sampler):
     def __init__(
         self,
         flow: nn.Module,
-        nqs: Optional[nn.Module] = None,
-        hamiltonian: Optional[Hamiltonian] = None,
+        nqs: nn.Module | None = None,
+        hamiltonian: Hamiltonian | None = None,
         device: str = "cpu",
     ) -> None:
         self.flow: nn.Module = flow
-        self.nqs: Optional[nn.Module] = nqs
-        self.hamiltonian: Optional[Hamiltonian] = hamiltonian
+        self.nqs: nn.Module | None = nqs
+        self.hamiltonian: Hamiltonian | None = hamiltonian
         self.device: torch.device = torch.device(device)
 
         self.flow = self.flow.to(self.device)
@@ -119,7 +119,7 @@ class NFSampler(Sampler):
         n_unique = unique_configs.shape[0]
         sample_time = time.perf_counter() - t_start
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "n_unique": n_unique,
             "unique_ratio": n_unique / max(n_samples, 1),
             "sample_time": sample_time,
@@ -149,7 +149,7 @@ class NFSampler(Sampler):
         )
 
     @staticmethod
-    def _build_counts(configs: torch.Tensor) -> Dict[str, int]:
+    def _build_counts(configs: torch.Tensor) -> dict[str, int]:
         """Build bitstring occurrence counts from configuration tensor.
 
         Parameters

@@ -16,7 +16,6 @@ guaranteeing valid Slater determinants for quantum chemistry.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -66,7 +65,7 @@ class OrbitalScoringNetwork(nn.Module):
     def __init__(
         self,
         n_orbitals: int,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
         context_dim: int = 32,
     ) -> None:
         super().__init__()
@@ -100,7 +99,7 @@ class OrbitalScoringNetwork(nn.Module):
     def forward(
         self,
         batch_size: int,
-        context: Optional[torch.Tensor] = None,
+        context: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Produce orbital-occupation logits.
 
@@ -214,7 +213,7 @@ class ParticleConservingFlowSampler(nn.Module):
         num_sites: int,
         n_alpha: int,
         n_beta: int,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
         temperature: float = 1.0,
         min_temperature: float = 0.01,
     ) -> None:
@@ -305,8 +304,8 @@ class ParticleConservingFlowSampler(nn.Module):
     def sample(
         self,
         batch_size: int,
-        temperature: Optional[float] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        temperature: float | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Sample particle-conserving binary configurations.
 
         Each configuration has exactly ``n_alpha`` occupied alpha
@@ -352,7 +351,7 @@ class ParticleConservingFlowSampler(nn.Module):
     def sample_without_replacement(
         self,
         batch_size: int,
-        temperature: Optional[float] = None,
+        temperature: float | None = None,
     ) -> torch.Tensor:
         """Sample unique configurations using deterministic ordering.
 
@@ -385,8 +384,8 @@ class ParticleConservingFlowSampler(nn.Module):
     def forward(
         self,
         batch_size: int,
-        temperature: Optional[float] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        temperature: float | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass --- delegates to :meth:`sample`.
 
         Parameters
@@ -416,7 +415,7 @@ def verify_particle_conservation(
     n_orbitals: int,
     n_alpha: int,
     n_beta: int,
-) -> Tuple[bool, Dict[str, object]]:
+) -> tuple[bool, dict[str, object]]:
     """Validate that all configurations conserve particle numbers.
 
     Checks that each configuration has exactly ``n_alpha`` occupied
@@ -483,7 +482,7 @@ def verify_particle_conservation(
     alpha_violations = int((~alpha_valid).sum().item())
     beta_violations = int((~beta_valid).sum().item())
 
-    stats: Dict[str, object] = {
+    stats: dict[str, object] = {
         "n_configs": n_configs,
         "n_valid": n_valid,
         "n_invalid": n_configs - n_valid,

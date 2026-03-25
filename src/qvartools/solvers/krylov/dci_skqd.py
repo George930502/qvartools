@@ -21,7 +21,7 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -235,11 +235,11 @@ class DCISKQDSolverB(Solver):
         Solver hyper-parameters.
     """
 
-    def __init__(self, config: Optional[DCISKQDConfig] = None) -> None:
+    def __init__(self, config: DCISKQDConfig | None = None) -> None:
         self.config = config or DCISKQDConfig()
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run DCI-SKQD-B.
 
@@ -365,11 +365,11 @@ class DCISKQDSolverC(Solver):
         Solver hyper-parameters.
     """
 
-    def __init__(self, config: Optional[DCISKQDConfig] = None) -> None:
+    def __init__(self, config: DCISKQDConfig | None = None) -> None:
         self.config = config or DCISKQDConfig()
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run DCI-SKQD-C.
 

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import scipy.sparse
@@ -77,7 +77,7 @@ class IterativeNFSKQDSolver(Solver):
     'IterativeNFSKQD'
     """
 
-    _DEFAULT_SKQD_CONFIG: Dict[str, Any] = {
+    _DEFAULT_SKQD_CONFIG: dict[str, Any] = {
         "max_krylov_dim": 10,
         "time_step": 0.1,
         "shots_per_krylov": 1000,
@@ -89,8 +89,8 @@ class IterativeNFSKQDSolver(Solver):
         self,
         n_iterations: int = 5,
         n_samples: int = 2000,
-        training_config: Optional[Dict[str, Any]] = None,
-        skqd_config: Optional[Dict[str, Any]] = None,
+        training_config: dict[str, Any] | None = None,
+        skqd_config: dict[str, Any] | None = None,
         convergence_tol: float = 1e-6,
         device: str = "cpu",
     ) -> None:
@@ -107,15 +107,15 @@ class IterativeNFSKQDSolver(Solver):
         merged_train = dict(_DEFAULT_TRAINING_CONFIG)
         if training_config is not None:
             merged_train.update(training_config)
-        self.training_config: Dict[str, Any] = merged_train
+        self.training_config: dict[str, Any] = merged_train
 
         merged_skqd = dict(self._DEFAULT_SKQD_CONFIG)
         if skqd_config is not None:
             merged_skqd.update(skqd_config)
-        self.skqd_config: Dict[str, Any] = merged_skqd
+        self.skqd_config: dict[str, Any] = merged_skqd
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run the iterative NF-SKQD pipeline.
 
@@ -131,25 +131,25 @@ class IterativeNFSKQDSolver(Solver):
         SolverResult
             Best energy across iterations with full history in metadata.
         """
+        from qvartools.diag import (
+            ProjectedHamiltonianBuilder,
+            solve_generalized_eigenvalue,
+        )
         from qvartools.flows import (
             PhysicsGuidedConfig,
             PhysicsGuidedFlowTrainer,
         )
         from qvartools.krylov import FlowGuidedSKQD, SKQDConfig
         from qvartools.nqs import DenseNQS
-        from qvartools.diag import (
-            ProjectedHamiltonianBuilder,
-            solve_generalized_eigenvalue,
-        )
 
         t_start = time.perf_counter()
         n_qubits = mol_info["n_qubits"]
 
-        energies: List[float] = []
-        basis_sizes: List[int] = []
+        energies: list[float] = []
+        basis_sizes: list[int] = []
         best_energy = float("inf")
-        accumulated_basis: Optional[torch.Tensor] = None
-        prev_eigvec: Optional[np.ndarray] = None
+        accumulated_basis: torch.Tensor | None = None
+        prev_eigvec: np.ndarray | None = None
 
         converged = False
 
@@ -242,7 +242,7 @@ class IterativeNFSKQDSolver(Solver):
         wall_time = time.perf_counter() - t_start
         diag_dim = basis_sizes[-1] if basis_sizes else 0
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "energies_per_iteration": energies,
             "basis_sizes_per_iteration": basis_sizes,
             "n_iterations_run": len(energies),

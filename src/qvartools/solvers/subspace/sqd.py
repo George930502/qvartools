@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # Default training configuration
 # ---------------------------------------------------------------------------
 
-_DEFAULT_TRAINING_CONFIG: Dict[str, Any] = {
+_DEFAULT_TRAINING_CONFIG: dict[str, Any] = {
     "samples_per_batch": 500,
     "num_batches": 10,
     "num_epochs": 200,
@@ -105,7 +105,7 @@ class SQDSolver(Solver):
         self,
         n_samples: int = 5000,
         flow_type: str = "particle_conserving",
-        training_config: Optional[Dict[str, Any]] = None,
+        training_config: dict[str, Any] | None = None,
         device: str = "cpu",
     ) -> None:
         if n_samples < 1:
@@ -123,10 +123,10 @@ class SQDSolver(Solver):
         merged = dict(_DEFAULT_TRAINING_CONFIG)
         if training_config is not None:
             merged.update(training_config)
-        self.training_config: Dict[str, Any] = merged
+        self.training_config: dict[str, Any] = merged
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run the SQD pipeline.
 
@@ -142,15 +142,15 @@ class SQDSolver(Solver):
         SolverResult
             SQD energy result with training history in metadata.
         """
+        from qvartools.diag import (
+            ProjectedHamiltonianBuilder,
+            compute_ground_state_energy,
+        )
         from qvartools.flows import (
             PhysicsGuidedConfig,
             PhysicsGuidedFlowTrainer,
         )
         from qvartools.nqs import DenseNQS
-        from qvartools.diag import (
-            ProjectedHamiltonianBuilder,
-            compute_ground_state_energy,
-        )
 
         t_start = time.perf_counter()
         n_qubits = mol_info["n_qubits"]
@@ -196,7 +196,7 @@ class SQDSolver(Solver):
 
         wall_time = time.perf_counter() - t_start
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "training_history": history,
             "basis_size": diag_dim,
             "n_samples": self.n_samples,

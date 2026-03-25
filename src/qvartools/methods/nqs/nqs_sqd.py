@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 
@@ -85,8 +85,8 @@ class NQSSQDConfig:
 
 def run_nqs_sqd(
     hamiltonian: Any,
-    mol_info: Dict[str, Any],
-    config: Optional[NQSSQDConfig] = None,
+    mol_info: dict[str, Any],
+    config: NQSSQDConfig | None = None,
 ) -> SolverResult:
     """Execute the NQS+SQD pipeline.
 
@@ -137,7 +137,7 @@ def run_nqs_sqd(
 
     # --- Stage 1: VMC pre-training ---
     optimiser = torch.optim.Adam(nqs.parameters(), lr=cfg.nqs_lr)
-    train_energies: List[float] = []
+    train_energies: list[float] = []
 
     nqs.train()
     for epoch in range(cfg.nqs_train_epochs):

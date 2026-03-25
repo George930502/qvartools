@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import torch
@@ -91,7 +91,7 @@ class CIPSISolver(Solver):
     # ------------------------------------------------------------------
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run the CIPSI selected-CI algorithm.
 

@@ -17,7 +17,7 @@ _bias_nqs
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import torch
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # Default training configuration
 # ---------------------------------------------------------------------------
 
-_DEFAULT_TRAINING_CONFIG: Dict[str, Any] = {
+_DEFAULT_TRAINING_CONFIG: dict[str, Any] = {
     "samples_per_batch": 300,
     "num_batches": 5,
     "num_epochs": 100,

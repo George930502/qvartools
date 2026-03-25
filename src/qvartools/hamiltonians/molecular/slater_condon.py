@@ -19,8 +19,6 @@ numba_get_connections
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 
 from qvartools.hamiltonians.molecular.jordan_wigner import (
@@ -45,7 +43,7 @@ def _numba_single_excitations(
     h1e: np.ndarray,
     h2e: np.ndarray,
     num_sites: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute all single excitations from *config* with Slater--Condon rules.
 
     Parameters
@@ -154,7 +152,7 @@ def _numba_double_excitations(
     n_orb: int,
     h2e: np.ndarray,
     num_sites: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute all double excitations from *config* with Slater--Condon rules.
 
     Parameters
@@ -281,7 +279,7 @@ def numba_get_connections(
     h1e: np.ndarray,
     h2e: np.ndarray,
     num_sites: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute all single and double excitations via Numba.
 
     Parameters

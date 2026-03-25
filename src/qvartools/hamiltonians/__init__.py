@@ -28,13 +28,13 @@ compute_molecular_integrals
 """
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
-from qvartools.hamiltonians.spin.heisenberg import HeisenbergHamiltonian
 from qvartools.hamiltonians.integrals import (
     MolecularIntegrals,
     compute_molecular_integrals,
 )
 from qvartools.hamiltonians.molecular import MolecularHamiltonian
 from qvartools.hamiltonians.pauli_string import PauliString
+from qvartools.hamiltonians.spin.heisenberg import HeisenbergHamiltonian
 from qvartools.hamiltonians.spin.tfim import TransverseFieldIsing
 
 __all__ = [

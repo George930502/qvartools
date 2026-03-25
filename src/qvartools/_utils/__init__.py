@@ -38,8 +38,6 @@ compute_occupancies
     Orbital occupancies from an eigenvector.
 """
 
-from qvartools._utils.hashing.config_hash import ConfigHash, config_integer_hash
-from qvartools._utils.hashing.connection_cache import ConnectionCache
 from qvartools._utils.formatting.bitstring_format import (
     configs_to_ibm_format,
     ibm_format_to_configs,
@@ -48,7 +46,8 @@ from qvartools._utils.formatting.bitstring_format import (
 from qvartools._utils.gpu.diagnostics import compute_occupancies
 from qvartools._utils.gpu.diagnostics import gpu_solve_fermion as gpu_solve_fermion_diag
 from qvartools._utils.gpu.linear_algebra import gpu_solve_fermion
-from qvartools.krylov.expansion.krylov_expand import expand_basis_via_connections
+from qvartools._utils.hashing.config_hash import ConfigHash, config_integer_hash
+from qvartools._utils.hashing.connection_cache import ConnectionCache
 from qvartools._utils.scaling.quality_presets import (
     QualityPreset,
     ScaledParameters,
@@ -56,6 +55,7 @@ from qvartools._utils.scaling.quality_presets import (
     SystemTier,
 )
 from qvartools._utils.scaling.system_scaler import SystemScaler
+from qvartools.krylov.expansion.krylov_expand import expand_basis_via_connections
 
 __all__ = [
     "ConnectionCache",

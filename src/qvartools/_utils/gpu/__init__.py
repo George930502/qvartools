@@ -1,7 +1,6 @@
 """gpu --- GPU-accelerated linear algebra and diagonalisation."""
 from __future__ import annotations
 
-from qvartools._utils.gpu.linear_algebra import gpu_solve_fermion
 from qvartools._utils.gpu.diagnostics import compute_occupancies
 from qvartools._utils.gpu.diagnostics import gpu_solve_fermion as gpu_solve_fermion_diag
 from qvartools._utils.gpu.fci_solver import (
@@ -10,6 +9,7 @@ from qvartools._utils.gpu.fci_solver import (
     compute_gpu_fci,
     compute_gpu_fci_from_integrals,
 )
+from qvartools._utils.gpu.linear_algebra import gpu_solve_fermion
 
 __all__ = [
     "gpu_solve_fermion",

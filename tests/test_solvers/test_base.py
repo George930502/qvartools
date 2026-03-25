@@ -6,7 +6,6 @@ import pytest
 
 from qvartools.solvers.solver import Solver, SolverResult
 
-
 # ---------------------------------------------------------------------------
 # SolverResult
 # ---------------------------------------------------------------------------

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
 
@@ -71,8 +71,8 @@ class SolverResult:
     wall_time: float
     method: str
     converged: bool
-    energy: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    energy: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __repr__(self) -> str:
         energy_str = f"{self.energy:.10f}" if self.energy is not None else "None"
@@ -106,7 +106,7 @@ class Solver(ABC):
 
     @abstractmethod
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Compute the ground-state energy.
 

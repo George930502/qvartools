@@ -21,8 +21,6 @@ Based on gpu4pyscf (Apache 2.0 License):
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 __all__ = [
@@ -37,7 +35,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 GPU_FCI_AVAILABLE = False
-_GPU_FCI_IMPORT_ERROR: Optional[str] = None
+_GPU_FCI_IMPORT_ERROR: str | None = None
 
 try:
     import cupy as cp

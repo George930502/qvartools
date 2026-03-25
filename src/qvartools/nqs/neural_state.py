@@ -11,7 +11,6 @@ wavefunction, probabilities, and normalised probabilities.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -107,7 +106,7 @@ class NeuralQuantumState(nn.Module, ABC):
 
     def log_psi(
         self, x: torch.Tensor
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Compute the log-wavefunction.
 
         For real-valued NQS (``complex_output is False``), returns only the
@@ -226,7 +225,7 @@ class NeuralQuantumState(nn.Module, ABC):
 
     def forward(
         self, x: torch.Tensor
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Forward pass --- delegates to :meth:`log_psi`.
 
         Parameters

@@ -9,7 +9,6 @@ of Carleo & Troyer (Science, 2017).
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -75,7 +74,7 @@ class RBMQuantumState(NeuralQuantumState):
     def __init__(
         self,
         num_sites: int,
-        num_hidden: Optional[int] = None,
+        num_hidden: int | None = None,
         complex_weights: bool = False,
     ) -> None:
         super().__init__(
@@ -102,9 +101,9 @@ class RBMQuantumState(NeuralQuantumState):
         )
 
         # Complex parts (optional)
-        self.a_imag: Optional[nn.Parameter] = None
-        self.b_imag: Optional[nn.Parameter] = None
-        self.W_imag: Optional[nn.Parameter] = None
+        self.a_imag: nn.Parameter | None = None
+        self.b_imag: nn.Parameter | None = None
+        self.W_imag: nn.Parameter | None = None
 
         if complex_weights:
             self.a_imag = nn.Parameter(torch.randn(num_sites) * 0.01)

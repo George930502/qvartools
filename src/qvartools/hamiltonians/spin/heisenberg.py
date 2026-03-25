@@ -12,8 +12,6 @@ Configurations are binary vectors of length ``num_spins`` where
 
 from __future__ import annotations
 
-from typing import Tuple, Union
-
 import numpy as np
 import torch
 
@@ -30,7 +28,7 @@ __all__ = [
 
 
 def _to_field_tensor(
-    value: Union[float, int, np.ndarray, torch.Tensor],
+    value: float | int | np.ndarray | torch.Tensor,
     num_spins: int,
     name: str,
 ) -> torch.Tensor:
@@ -121,9 +119,9 @@ class HeisenbergHamiltonian(Hamiltonian):
         Jx: float = 1.0,
         Jy: float = 1.0,
         Jz: float = 1.0,
-        h_x: Union[float, np.ndarray, torch.Tensor] = 0.0,
-        h_y: Union[float, np.ndarray, torch.Tensor] = 0.0,
-        h_z: Union[float, np.ndarray, torch.Tensor] = 0.0,
+        h_x: float | np.ndarray | torch.Tensor = 0.0,
+        h_y: float | np.ndarray | torch.Tensor = 0.0,
+        h_z: float | np.ndarray | torch.Tensor = 0.0,
         periodic: bool = True,
     ) -> None:
         super().__init__(num_sites=num_spins, local_dim=2)
@@ -138,7 +136,7 @@ class HeisenbergHamiltonian(Hamiltonian):
         self._h_z = _to_field_tensor(h_z, num_spins, "h_z")
 
         # Precompute neighbour list
-        self._neighbours: list[Tuple[int, int]] = []
+        self._neighbours: list[tuple[int, int]] = []
         n_bonds = num_spins if periodic else num_spins - 1
         for i in range(n_bonds):
             j = (i + 1) % num_spins
@@ -197,7 +195,7 @@ class HeisenbergHamiltonian(Hamiltonian):
 
     def get_connections(
         self, config: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return off-diagonal connected states (XX + YY exchange, X/Y fields).
 
         The XX + YY interaction flips a pair of anti-aligned neighbours:

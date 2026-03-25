@@ -11,7 +11,6 @@ transformation.  Supports both a single-configuration interface
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -147,7 +146,7 @@ class MolecularHamiltonian(Hamiltonian):
         self._K_single_np = np.ascontiguousarray(K_single)
 
         # Precompute sparse h2e dictionaries for efficient double excitations
-        self._h2e_sparse: Dict[Tuple[int, int, int, int], float] = {}
+        self._h2e_sparse: dict[tuple[int, int, int, int], float] = {}
         for p in range(n_orb):
             for q in range(n_orb):
                 for r in range(n_orb):
@@ -322,7 +321,7 @@ class MolecularHamiltonian(Hamiltonian):
 
     def get_connections(
         self, config: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return all off-diagonal connected states via Slater--Condon rules.
 
         Computes single and double excitations with proper Jordan--Wigner
@@ -374,7 +373,7 @@ class MolecularHamiltonian(Hamiltonian):
 
     def _python_get_connections(
         self, config: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Pure-Python fallback for :meth:`get_connections`.
 
         Parameters
@@ -586,7 +585,7 @@ class MolecularHamiltonian(Hamiltonian):
 
     def get_connections_vectorized_batch(
         self, configs: torch.Tensor
-    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         """Compute connections for a batch of configs (GPU-vectorised).
 
         This method processes each configuration independently but uses
@@ -607,8 +606,8 @@ class MolecularHamiltonian(Hamiltonian):
             One tensor per batch element, each of shape ``(n_conn_i,)``.
         """
         batch = configs.shape[0]
-        all_connected: List[torch.Tensor] = []
-        all_elements: List[torch.Tensor] = []
+        all_connected: list[torch.Tensor] = []
+        all_elements: list[torch.Tensor] = []
 
         for b in range(batch):
             conn, elem = self.get_connections(configs[b])
@@ -875,8 +874,8 @@ class MolecularHamiltonian(Hamiltonian):
         """
         # Try PySCF's native FCI solver first (fastest)
         try:
-            from pyscf import fci as pyscf_fci
             from pyscf import ao2mo
+            from pyscf import fci as pyscf_fci
 
             h1e_np = self._h1e_np
             h2e_np = self._h2e_np

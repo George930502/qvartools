@@ -15,7 +15,6 @@ from qvartools.krylov.expansion.residual_expansion import (
     _generate_candidate_configs,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

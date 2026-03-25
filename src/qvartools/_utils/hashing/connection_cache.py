@@ -15,7 +15,7 @@ by interpreting it as a binary number (via powers of 2).
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import torch
 
@@ -83,13 +83,13 @@ class ConnectionCache:
         if max_size < 1:
             raise ValueError(f"max_size must be >= 1, got {max_size}")
         self.max_size: int = max_size
-        self._cache: Dict[int, Tuple[torch.Tensor, torch.Tensor]] = {}
+        self._cache: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
         self._hits: int = 0
         self._misses: int = 0
 
     def get(
         self, config: torch.Tensor
-    ) -> Optional[Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> tuple[torch.Tensor, torch.Tensor] | None:
         """Look up cached connections for a configuration.
 
         Parameters
@@ -145,7 +145,7 @@ class ConnectionCache:
         self._hits = 0
         self._misses = 0
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return cache performance statistics.
 
         Returns

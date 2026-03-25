@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -50,8 +50,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 try:
-    from qiskit_addon_sqd.configuration_recovery import recover_configurations  # type: ignore[import-untyped]
-    from qiskit_addon_sqd.fermion import solve_fermion as ibm_solve_fermion  # type: ignore[import-untyped]
+    from qiskit_addon_sqd.configuration_recovery import (
+        recover_configurations,  # type: ignore[import-untyped]
+    )
+    from qiskit_addon_sqd.fermion import (
+        solve_fermion as ibm_solve_fermion,  # type: ignore[import-untyped]
+    )
 
     _IBM_SQD_AVAILABLE = True
 except ImportError:
@@ -134,7 +138,7 @@ def _train_nqs_teacher(
     n_orb: int,
     lr: float,
     epochs: int,
-) -> List[float]:
+) -> list[float]:
     """Train NQS with eigenvector teacher signal.
 
     Parameters
@@ -170,7 +174,7 @@ def _train_nqs_teacher(
     beta = configs_dev[:, n_orb:]
 
     optimiser = torch.optim.Adam(nqs.parameters(), lr=lr)
-    losses: List[float] = []
+    losses: list[float] = []
 
     nqs.train()
     for _epoch in range(epochs):
@@ -192,8 +196,8 @@ def _train_nqs_teacher(
 
 def run_hi_nqs_skqd(
     hamiltonian: Any,
-    mol_info: Dict[str, Any],
-    config: Optional[HINQSSKQDConfig] = None,
+    mol_info: dict[str, Any],
+    config: HINQSSKQDConfig | None = None,
 ) -> SolverResult:
     """Execute the HI+NQS+SKQD pipeline.
 
@@ -246,8 +250,8 @@ def run_hi_nqs_skqd(
     # --- Cumulative basis ---
     cumulative_basis = torch.zeros(0, n_qubits, dtype=torch.long, device=device)
 
-    energy_history: List[float] = []
-    basis_size_history: List[int] = []
+    energy_history: list[float] = []
+    basis_size_history: list[int] = []
     best_energy = float("inf")
     converged = False
 
@@ -295,9 +299,9 @@ def run_hi_nqs_skqd(
         )
 
         # --- Batch diagonalisation ---
-        batch_energies: List[float] = []
-        best_coeffs: Optional[np.ndarray] = None
-        best_batch_configs: Optional[torch.Tensor] = None
+        batch_energies: list[float] = []
+        best_coeffs: np.ndarray | None = None
+        best_batch_configs: torch.Tensor | None = None
         best_batch_energy = float("inf")
         latest_occs: Any = None
 

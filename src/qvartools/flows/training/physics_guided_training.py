@@ -24,18 +24,17 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
 
-from qvartools.hamiltonians.hamiltonian import Hamiltonian
 from qvartools.flows.training.loss_functions import (
     ConnectionCache,
     compute_entropy_loss,
     compute_physics_loss,
     compute_teacher_loss,
 )
+from qvartools.hamiltonians.hamiltonian import Hamiltonian
 
 __all__ = [
     "PhysicsGuidedConfig",
@@ -376,7 +375,7 @@ class PhysicsGuidedFlowTrainer:
         self.hamiltonian: Hamiltonian = hamiltonian
         self.config: PhysicsGuidedConfig = config
 
-        self.accumulated_basis: Optional[torch.Tensor] = None
+        self.accumulated_basis: torch.Tensor | None = None
 
         self.flow_optimizer: torch.optim.Adam = torch.optim.Adam(
             flow.parameters(), lr=config.flow_lr
@@ -388,7 +387,7 @@ class PhysicsGuidedFlowTrainer:
         self.energy_baseline: float = 0.0
         self._baseline_initialized: bool = False
 
-        self.connection_cache: Optional[ConnectionCache] = None
+        self.connection_cache: ConnectionCache | None = None
         if config.use_connection_cache:
             self.connection_cache = ConnectionCache(
                 max_size=config.max_cache_size
@@ -492,7 +491,7 @@ class PhysicsGuidedFlowTrainer:
         progress = epoch / max(cfg.temperature_decay_epochs, 1)
         return cfg.initial_temperature * math.exp(-decay_rate * progress)
 
-    def _train_epoch(self, epoch: int) -> Dict[str, float]:
+    def _train_epoch(self, epoch: int) -> dict[str, float]:
         """Execute a single training epoch.
 
         Samples configurations from the flow, computes the combined loss,
@@ -635,7 +634,7 @@ class PhysicsGuidedFlowTrainer:
             "temperature": temperature,
         }
 
-    def train(self, progress: bool = True) -> Dict[str, list]:
+    def train(self, progress: bool = True) -> dict[str, list]:
         """Run the full training loop.
 
         Trains for up to ``config.num_epochs`` epochs, with early
@@ -664,7 +663,7 @@ class PhysicsGuidedFlowTrainer:
             - ``"basis_size"`` : list of int
             - ``"temperature"`` : list of float
         """
-        history: Dict[str, list] = {
+        history: dict[str, list] = {
             "teacher_loss": [],
             "physics_loss": [],
             "entropy_loss": [],

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
 from qvartools.solvers.solver import Solver, SolverResult
@@ -59,7 +59,7 @@ class FCISolver(Solver):
         self.max_configs: int = max_configs
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Compute the FCI ground-state energy.
 
@@ -112,7 +112,7 @@ class FCISolver(Solver):
         )
 
     def _try_pyscf_fci(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> tuple:
         """Attempt FCI via PySCF.
 
@@ -167,7 +167,7 @@ class FCISolver(Solver):
 
         diag_dim = comb(n_orb, n_alpha) * comb(n_orb, n_beta)
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "pyscf_converged": mf.converged,
             "n_orbitals": n_orb,
             "n_alpha": n_alpha,
@@ -206,5 +206,5 @@ class FCISolver(Solver):
         logger.info("Using dense diagonalisation (dim=%d).", diag_dim)
         energy, _ = hamiltonian.exact_ground_state()
 
-        metadata: Dict[str, Any] = {"fallback": "dense_diag"}
+        metadata: dict[str, Any] = {"fallback": "dense_diag"}
         return energy, diag_dim, True, metadata

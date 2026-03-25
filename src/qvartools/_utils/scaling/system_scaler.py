@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any, Dict
+from typing import Any
 
 from qvartools._utils.scaling.quality_presets import (
     QualityPreset,
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Preset multipliers
 # ---------------------------------------------------------------------------
 
-_PRESET_MULTIPLIERS: Dict[QualityPreset, Dict[str, float]] = {
+_PRESET_MULTIPLIERS: dict[QualityPreset, dict[str, float]] = {
     QualityPreset.FAST: {
         "hidden": 0.6,
         "samples": 0.5,
@@ -91,7 +91,7 @@ class SystemScaler:
         self, preset: QualityPreset = QualityPreset.BALANCED
     ) -> None:
         self.preset: QualityPreset = preset
-        self._mult: Dict[str, float] = _PRESET_MULTIPLIERS[preset]
+        self._mult: dict[str, float] = _PRESET_MULTIPLIERS[preset]
 
     # ------------------------------------------------------------------
     # System analysis
@@ -252,7 +252,7 @@ class SystemScaler:
     # Convenience
     # ------------------------------------------------------------------
 
-    def create_pipeline_config(self, hamiltonian: Any) -> Dict[str, Any]:
+    def create_pipeline_config(self, hamiltonian: Any) -> dict[str, Any]:
         """Analyse a Hamiltonian and return a pipeline configuration dict.
 
         This is a convenience method that chains :meth:`analyze_system` and
@@ -273,7 +273,7 @@ class SystemScaler:
         metrics = self.analyze_system(hamiltonian)
         params = self.compute_parameters(metrics)
 
-        config: Dict[str, Any] = {
+        config: dict[str, Any] = {
             # Diagnostics
             "metrics": {
                 "n_qubits": metrics.n_qubits,

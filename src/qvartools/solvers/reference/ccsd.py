@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
 from qvartools.solvers.solver import Solver, SolverResult
@@ -37,7 +37,7 @@ class CCSDSolver(Solver):
     """
 
     def solve(
-        self, hamiltonian: Hamiltonian, mol_info: Dict[str, Any]
+        self, hamiltonian: Hamiltonian, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Compute the CCSD ground-state energy.
 
@@ -105,7 +105,7 @@ class CCSDSolver(Solver):
         n_electrons = mol.nelectron
         diag_dim = n_orb * n_electrons  # approximate active-space dimension
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "e_hf": float(mf.e_tot),
             "e_corr": float(mycc.e_corr),
             "n_orbitals": n_orb,

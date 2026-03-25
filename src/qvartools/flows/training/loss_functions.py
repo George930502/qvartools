@@ -17,8 +17,6 @@ physics-guided training loop:
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
-
 import torch
 import torch.nn as nn
 
@@ -58,13 +56,13 @@ class ConnectionCache:
 
     def __init__(self, max_size: int = 100000) -> None:
         self.max_size: int = max_size
-        self._cache: Dict[tuple, Tuple[torch.Tensor, torch.Tensor]] = {}
+        self._cache: dict[tuple, tuple[torch.Tensor, torch.Tensor]] = {}
 
     def get(
         self,
         config: torch.Tensor,
         hamiltonian: Hamiltonian,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Retrieve connections for *config*, computing and caching if absent.
 
         Parameters
@@ -118,7 +116,7 @@ def compute_local_energy(
     nqs: nn.Module,
     hamiltonian: Hamiltonian,
     device: torch.device,
-    connection_cache: Optional[ConnectionCache] = None,
+    connection_cache: ConnectionCache | None = None,
 ) -> torch.Tensor:
     """Compute the local energy E_loc(x) for each configuration.
 
@@ -255,8 +253,8 @@ def compute_physics_loss(
     baseline_initialized: bool,
     use_energy_baseline: bool,
     ema_decay: float,
-    connection_cache: Optional[ConnectionCache] = None,
-) -> Tuple[torch.Tensor, float, float, bool]:
+    connection_cache: ConnectionCache | None = None,
+) -> tuple[torch.Tensor, float, float, bool]:
     """Compute the variational energy (physics) loss.
 
     ``L_physics = sum_x |psi(x)|^2 * E_loc(x) / Z``

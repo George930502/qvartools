@@ -61,8 +61,6 @@ configs = ["pyyaml>=6.0"]
 docs = [
     "sphinx>=7.0",
     "sphinx-rtd-theme>=2.0",
-    "sphinx-autodoc-typehints>=2.0",
-    "numpydoc>=1.6",
 ]
 cudaq = ["cudaq>=0.14"]
 full = ["pyscf>=2.4", "numba>=0.57"]
@@ -98,3 +96,17 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP"]
+ignore = [
+    "E501",   # line too long — enforced by formatter, not linter
+    "E731",   # lambda assignment — acceptable in limited contexts
+    "UP007",  # Union[X, Y] — cudaq kernel stubs use older style
+    "F841",   # unused variable — intermediate results kept for clarity
+    "F821",   # undefined name — cudaq injects gate names at runtime
+    "F822",   # undefined export — re-export pattern
+    "E402",   # module level import not at top — config_loader path hack
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/qvartools/krylov/circuits/*.py" = ["F821"]   # cudaq gate names injected at runtime
+"src/qvartools/samplers/quantum/*.py" = ["F821"]  # cudaq gate names injected at runtime
+"experiments/config_loader.py" = ["E402"]

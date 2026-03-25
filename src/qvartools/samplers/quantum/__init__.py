@@ -8,7 +8,10 @@ __all__ = ["TrotterSampler"]
 # Optional imports guarded by try/except
 def __getattr__(name: str):
     if name in ("CUDAQCircuitSampler", "CUDAQSamplerConfig"):
-        from qvartools.samplers.quantum.cudaq_sampler import CUDAQCircuitSampler, CUDAQSamplerConfig
+        from qvartools.samplers.quantum.cudaq_sampler import (
+            CUDAQCircuitSampler,
+            CUDAQSamplerConfig,
+        )
         return {"CUDAQCircuitSampler": CUDAQCircuitSampler, "CUDAQSamplerConfig": CUDAQSamplerConfig}[name]
     if name == "LUCJSampler":
         from qvartools.samplers.quantum.lucj_sampler import LUCJSampler

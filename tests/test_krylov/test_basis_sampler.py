@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from qvartools.hamiltonians import HeisenbergHamiltonian
 from qvartools.krylov.basis.sampler import KrylovBasisSampler
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

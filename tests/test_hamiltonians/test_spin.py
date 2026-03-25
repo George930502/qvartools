@@ -8,7 +8,6 @@ import torch
 
 from qvartools.hamiltonians import HeisenbergHamiltonian, TransverseFieldIsing
 
-
 # ===================================================================
 # Heisenberg: diagonal element tests
 # ===================================================================

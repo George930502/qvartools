@@ -29,10 +29,14 @@ from __future__ import annotations
 import logging
 import math
 from itertools import combinations
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 
+from qvartools.diag import (
+    DiversityConfig,
+    DiversitySelector,
+)
 from qvartools.flows import (
     DiscreteFlowSampler,
     ParticleConservingFlowSampler,
@@ -50,10 +54,6 @@ from qvartools.krylov import (
 from qvartools.molecules import get_molecule
 from qvartools.nqs import DenseNQS
 from qvartools.pipeline_config import PipelineConfig
-from qvartools.diag import (
-    DiversityConfig,
-    DiversitySelector,
-)
 
 __all__ = [
     "PipelineConfig",
@@ -104,8 +104,8 @@ class FlowGuidedKrylovPipeline:
     def __init__(
         self,
         hamiltonian: Any,
-        config: Optional[PipelineConfig] = None,
-        exact_energy: Optional[float] = None,
+        config: PipelineConfig | None = None,
+        exact_energy: float | None = None,
         auto_adapt: bool = True,
     ) -> None:
         self.hamiltonian = hamiltonian
@@ -141,10 +141,10 @@ class FlowGuidedKrylovPipeline:
         self.flow: torch.nn.Module
         self.nqs: DenseNQS
         self.reference_state: torch.Tensor
-        self.trainer: Optional[PhysicsGuidedFlowTrainer] = None
-        self._essential_configs: Optional[torch.Tensor] = None
-        self.nf_basis: Optional[torch.Tensor] = None
-        self.results: Dict[str, Any] = {}
+        self.trainer: PhysicsGuidedFlowTrainer | None = None
+        self._essential_configs: torch.Tensor | None = None
+        self.nf_basis: torch.Tensor | None = None
+        self.results: dict[str, Any] = {}
         self._init_components()
 
         logger.info(
@@ -304,7 +304,7 @@ class FlowGuidedKrylovPipeline:
     # Stage 1: Train flow + NQS (or generate Direct-CI basis)
     # ------------------------------------------------------------------
 
-    def train_flow_nqs(self, progress: bool = True) -> Dict[str, list]:
+    def train_flow_nqs(self, progress: bool = True) -> dict[str, list]:
         """Stage 1: Physics-guided joint training of the flow and NQS.
 
         If ``config.skip_nf_training`` is ``True``, generates essential
@@ -480,7 +480,7 @@ class FlowGuidedKrylovPipeline:
     # Stage 3: Subspace diagonalization (routing)
     # ------------------------------------------------------------------
 
-    def run_subspace_diag(self, progress: bool = True) -> Dict[str, Any]:
+    def run_subspace_diag(self, progress: bool = True) -> dict[str, Any]:
         """Stage 3: Subspace diagonalization via SKQD, SKQD-Quantum, or SQD.
 
         Routes to the appropriate backend based on ``config.subspace_mode``.
@@ -519,7 +519,7 @@ class FlowGuidedKrylovPipeline:
 
     def _run_skqd(
         self, basis: torch.Tensor, progress: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run classical SKQD (exact time evolution).
 
         Parameters
@@ -585,7 +585,7 @@ class FlowGuidedKrylovPipeline:
 
     def _run_skqd_quantum(
         self, basis: torch.Tensor, progress: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run quantum circuit SKQD (Trotterized evolution via CUDA-Q).
 
         Parameters
@@ -656,7 +656,7 @@ class FlowGuidedKrylovPipeline:
 
     def _run_sqd(
         self, basis: torch.Tensor, progress: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run SQD (sampling-based batch diagonalization).
 
         Parameters
@@ -676,6 +676,8 @@ class FlowGuidedKrylovPipeline:
         try:
             from qvartools.krylov.circuits.sqd import (
                 SQDConfig as SQDPipelineConfig,
+            )
+            from qvartools.krylov.circuits.sqd import (
                 SQDSolver as SQDPipelineSolver,
             )
         except ImportError:
@@ -710,7 +712,7 @@ class FlowGuidedKrylovPipeline:
         self.results["combined_energy"] = sqd_energy
         return results
 
-    def _direct_diagonalize(self, basis: torch.Tensor) -> Dict[str, Any]:
+    def _direct_diagonalize(self, basis: torch.Tensor) -> dict[str, Any]:
         """Compute energy by direct diagonalization of the basis.
 
         Parameters
@@ -801,7 +803,7 @@ class FlowGuidedKrylovPipeline:
     # Full pipeline
     # ------------------------------------------------------------------
 
-    def run(self, progress: bool = True) -> Dict[str, Any]:
+    def run(self, progress: bool = True) -> dict[str, Any]:
         """Execute the complete pipeline.
 
         Runs training (or Direct-CI), basis extraction, and subspace
@@ -880,9 +882,9 @@ class FlowGuidedKrylovPipeline:
 
 def run_molecular_benchmark(
     molecule: str,
-    config: Optional[PipelineConfig] = None,
+    config: PipelineConfig | None = None,
     verbose: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Load a molecule from the registry and run the full pipeline.
 
     Parameters

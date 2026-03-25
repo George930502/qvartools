@@ -15,7 +15,6 @@ from qvartools.hamiltonians import (
     compute_molecular_integrals,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helper: build H2 integrals (reusable across tests in this module)
 # ---------------------------------------------------------------------------

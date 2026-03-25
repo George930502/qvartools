@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
 import torch
@@ -145,7 +145,7 @@ class NFSKQDSolver(Solver):
     def __init__(
         self,
         flow_model: FlowModel,
-        config: Optional[NFSKQDConfig] = None,
+        config: NFSKQDConfig | None = None,
     ) -> None:
         self.flow = flow_model
         self.config = config or NFSKQDConfig()
@@ -155,7 +155,7 @@ class NFSKQDSolver(Solver):
     # ------------------------------------------------------------------
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run NF-SKQD and return the ground-state energy estimate.
 

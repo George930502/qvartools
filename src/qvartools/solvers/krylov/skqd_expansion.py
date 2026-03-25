@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -151,13 +151,13 @@ class SKQDSolverB(Solver):
     def __init__(
         self,
         sampler: Any,
-        config: Optional[SKQDExpansionConfig] = None,
+        config: SKQDExpansionConfig | None = None,
     ) -> None:
         self.sampler = sampler
         self.config = config or SKQDExpansionConfig()
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run SKQD-B.
 
@@ -287,13 +287,13 @@ class SKQDSolverC(Solver):
     def __init__(
         self,
         sampler: Any,
-        config: Optional[SKQDExpansionConfig] = None,
+        config: SKQDExpansionConfig | None = None,
     ) -> None:
         self.sampler = sampler
         self.config = config or SKQDExpansionConfig()
 
     def solve(
-        self, hamiltonian: Any, mol_info: Dict[str, Any]
+        self, hamiltonian: Any, mol_info: dict[str, Any]
     ) -> SolverResult:
         """Run SKQD-C.
 

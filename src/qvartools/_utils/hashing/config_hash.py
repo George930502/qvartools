@@ -9,7 +9,7 @@ int64 overflow.
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import Union
 
 import torch
 
@@ -23,7 +23,7 @@ ConfigHash = Union[int, tuple]
 
 def config_integer_hash(
     configs: torch.Tensor,
-) -> List[ConfigHash]:
+) -> list[ConfigHash]:
     """Hash binary configuration vectors to integers.
 
     For n_sites < 64, each config is encoded as a single int64.

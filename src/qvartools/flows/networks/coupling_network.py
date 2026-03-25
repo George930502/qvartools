@@ -14,7 +14,6 @@ Provides the building blocks for the discrete normalizing flow:
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
 
 import torch
 import torch.nn as nn
@@ -160,7 +159,7 @@ class CouplingNetwork(nn.Module):
     def __init__(
         self,
         input_dim: int,
-        hidden_dims: List[int],
+        hidden_dims: list[int],
         output_dim: int,
     ) -> None:
         super().__init__()
@@ -178,7 +177,7 @@ class CouplingNetwork(nn.Module):
 
     def forward(
         self, masked_x: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute scale and shift from the masked input.
 
         Parameters

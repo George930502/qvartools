@@ -25,7 +25,7 @@ list_molecules
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from qvartools.hamiltonians.molecular import (
     MolecularHamiltonian,
@@ -45,17 +45,17 @@ logger = logging.getLogger(__name__)
 # Geometry definitions
 # ---------------------------------------------------------------------------
 
-_H2_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_H2_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("H", (0.0, 0.0, 0.0)),
     ("H", (0.0, 0.0, 0.74)),
 ]
 
-_LIH_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_LIH_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("Li", (0.0, 0.0, 0.0)),
     ("H", (0.0, 0.0, 1.6)),
 ]
 
-_BEH2_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_BEH2_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("Be", (0.0, 0.0, 0.0)),
     ("H", (0.0, 0.0, 1.33)),
     ("H", (0.0, 0.0, -1.33)),
@@ -64,26 +64,26 @@ _BEH2_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
 # H2O geometry from parametric (OH=0.96 Å, angle=104.5°)
 import math as _math
 
-_H2O_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_H2O_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("O", (0.0, 0.0, 0.0)),
     ("H", (0.96, 0.0, 0.0)),
     ("H", (0.96 * _math.cos(_math.radians(104.5)),
            0.96 * _math.sin(_math.radians(104.5)), 0.0)),
 ]
 
-_NH3_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_NH3_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("N", (0.0, 0.0, 0.0)),
     ("H", (0.0, -0.9377, -0.3816)),
     ("H", (0.8121, 0.4689, -0.3816)),
     ("H", (-0.8121, 0.4689, -0.3816)),
 ]
 
-_N2_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_N2_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("N", (0.0, 0.0, 0.0)),
     ("N", (0.0, 0.0, 1.0977)),
 ]
 
-_CH4_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_CH4_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("C", (0.0, 0.0, 0.0)),
     ("H", (0.6276, 0.6276, 0.6276)),
     ("H", (0.6276, -0.6276, -0.6276)),
@@ -91,7 +91,7 @@ _CH4_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
     ("H", (-0.6276, -0.6276, 0.6276)),
 ]
 
-_C2H4_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_C2H4_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("C", (0.0, 0.0, 0.6695)),
     ("C", (0.0, 0.0, -0.6695)),
     ("H", (0.0, 0.9289, 1.2321)),
@@ -100,25 +100,25 @@ _C2H4_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
     ("H", (0.0, -0.9289, -1.2321)),
 ]
 
-_CO_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_CO_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("C", (0.0, 0.0, 0.0)),
     ("O", (0.0, 0.0, 1.13)),
 ]
 
-_HCN_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_HCN_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("H", (0.0, 0.0, 0.0)),
     ("C", (0.0, 0.0, 1.06)),
     ("N", (0.0, 0.0, 2.22)),
 ]
 
-_C2H2_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_C2H2_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("H", (0.0, 0.0, 0.0)),
     ("C", (0.0, 0.0, 1.06)),
     ("C", (0.0, 0.0, 2.26)),
     ("H", (0.0, 0.0, 3.32)),
 ]
 
-_H2S_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
+_H2S_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("S", (0.0, 0.0, 0.0)),
     ("H", (1.34, 0.0, 0.0)),
     ("H", (-0.0497, 1.3391, 0.0)),
@@ -130,7 +130,7 @@ _H2S_GEOMETRY: List[Tuple[str, Tuple[float, float, float]]] = [
 # ---------------------------------------------------------------------------
 
 
-def _make_h2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_h2(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create H2 Hamiltonian and info dict.
 
     Parameters
@@ -151,7 +151,7 @@ def _make_h2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]
     return ham, info
 
 
-def _make_lih(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_lih(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create LiH Hamiltonian and info dict.
 
     Parameters
@@ -172,7 +172,7 @@ def _make_lih(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]
     return ham, info
 
 
-def _make_beh2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_beh2(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create BeH2 Hamiltonian and info dict.
 
     Parameters
@@ -193,7 +193,7 @@ def _make_beh2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any
     return ham, info
 
 
-def _make_h2o(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_h2o(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create H2O Hamiltonian and info dict.
 
     Parameters
@@ -214,7 +214,7 @@ def _make_h2o(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]
     return ham, info
 
 
-def _make_nh3(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_nh3(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create NH3 Hamiltonian and info dict.
 
     Parameters
@@ -235,7 +235,7 @@ def _make_nh3(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]
     return ham, info
 
 
-def _make_n2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_n2(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create N2 Hamiltonian and info dict.
 
     Parameters
@@ -256,7 +256,7 @@ def _make_n2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]
     return ham, info
 
 
-def _make_ch4(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_ch4(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create CH4 Hamiltonian and info dict.
 
     Parameters
@@ -277,7 +277,7 @@ def _make_ch4(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]
     return ham, info
 
 
-def _make_c2h4(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_c2h4(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create C2H4 (ethylene) Hamiltonian and info dict.
 
     Parameters
@@ -298,7 +298,7 @@ def _make_c2h4(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any
     return ham, info
 
 
-def _make_co(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_co(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create CO (carbon monoxide) Hamiltonian and info dict.
 
     Parameters
@@ -319,7 +319,7 @@ def _make_co(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]
     return ham, info
 
 
-def _make_hcn(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_hcn(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create HCN (hydrogen cyanide) Hamiltonian and info dict.
 
     Parameters
@@ -340,7 +340,7 @@ def _make_hcn(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]
     return ham, info
 
 
-def _make_c2h2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_c2h2(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create C2H2 (acetylene) Hamiltonian and info dict.
 
     Parameters
@@ -361,7 +361,7 @@ def _make_c2h2(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any
     return ham, info
 
 
-def _make_h2s(device: str = "cpu") -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+def _make_h2s(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create H2S (hydrogen sulfide) Hamiltonian and info dict.
 
     Parameters
@@ -391,10 +391,10 @@ def _build_info(
     name: str,
     n_qubits: int,
     basis: str,
-    geometry: List[Tuple[str, Tuple[float, float, float]]],
+    geometry: list[tuple[str, tuple[float, float, float]]],
     charge: int,
     spin: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a standardised molecule info dictionary.
 
     Parameters
@@ -432,7 +432,7 @@ def _build_info(
 # Registry
 # ---------------------------------------------------------------------------
 
-MOLECULE_REGISTRY: Dict[str, Dict[str, Any]] = {
+MOLECULE_REGISTRY: dict[str, dict[str, Any]] = {
     "h2": {
         "factory": _make_h2,
         "n_qubits": 4,
@@ -515,7 +515,7 @@ MOLECULE_REGISTRY: Dict[str, Dict[str, Any]] = {
 
 def get_molecule(
     name: str, device: str = "cpu"
-) -> Tuple[MolecularHamiltonian, Dict[str, Any]]:
+) -> tuple[MolecularHamiltonian, dict[str, Any]]:
     """Create a Hamiltonian and info dict for a named molecule.
 
     Looks up the molecule in :data:`MOLECULE_REGISTRY`, runs the PySCF
@@ -570,7 +570,7 @@ def get_molecule(
     return factory(device=device)
 
 
-def list_molecules() -> List[str]:
+def list_molecules() -> list[str]:
     """Return a sorted list of available molecule names.
 
     Returns

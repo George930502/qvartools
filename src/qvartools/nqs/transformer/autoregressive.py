@@ -16,8 +16,6 @@ Key features:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -85,8 +83,8 @@ class TransformerBlock(nn.Module):
         )
 
         # Cross-attention (optional)
-        self.cross_attn: Optional[CrossAttention] = None
-        self.ln_ca: Optional[nn.LayerNorm] = None
+        self.cross_attn: CrossAttention | None = None
+        self.ln_ca: nn.LayerNorm | None = None
         if has_cross_attn:
             self.ln_ca = nn.LayerNorm(embed_dim)
             self.cross_attn = CrossAttention(
@@ -106,7 +104,7 @@ class TransformerBlock(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        cross_kv: Optional[torch.Tensor] = None,
+        cross_kv: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Forward pass through the transformer block.
 
@@ -514,7 +512,7 @@ class AutoregressiveTransformer(nn.Module):
         head: nn.Linear,
         ln: nn.LayerNorm,
         temperature: float,
-        cross_kv: Optional[torch.Tensor],
+        cross_kv: torch.Tensor | None,
     ) -> torch.Tensor:
         """Autoregressively sample one spin channel with particle conservation.
 

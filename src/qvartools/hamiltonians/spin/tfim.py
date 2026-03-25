@@ -12,8 +12,6 @@ Configurations are binary vectors of length ``num_spins`` where
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import torch
 
 from qvartools.hamiltonians.hamiltonian import Hamiltonian
@@ -77,7 +75,7 @@ class TransverseFieldIsing(Hamiltonian):
         self.periodic: bool = periodic
 
         # Precompute interaction pairs
-        self._interaction_pairs: list[Tuple[int, int]] = []
+        self._interaction_pairs: list[tuple[int, int]] = []
         for i in range(num_spins):
             for ell in range(1, self.L + 1):
                 j = i + ell
@@ -119,7 +117,7 @@ class TransverseFieldIsing(Hamiltonian):
 
     def get_connections(
         self, config: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return off-diagonal connected states from the transverse field.
 
         The transverse field ``-h S^x_i`` flips each spin individually

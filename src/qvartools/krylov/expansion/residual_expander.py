@@ -16,7 +16,7 @@ ResidualBasedExpander
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -75,7 +75,7 @@ class ResidualBasedExpander:
 
     def _diagonalize(
         self, basis: torch.Tensor
-    ) -> Tuple[float, np.ndarray]:
+    ) -> tuple[float, np.ndarray]:
         """Solve the eigenvalue problem in the current basis.
 
         Parameters
@@ -153,7 +153,7 @@ class ResidualBasedExpander:
         current_basis: torch.Tensor,
         energy: float,
         eigenvector: np.ndarray,
-    ) -> Tuple[torch.Tensor, Dict[str, Any]]:
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Iteratively expand the basis using residual analysis.
 
         Parameters
@@ -186,9 +186,9 @@ class ResidualBasedExpander:
 
         initial_energy = current_energy
         stagnation_count = 0
-        basis_sizes: List[int] = [basis.shape[0]]
-        energies: List[float] = [current_energy]
-        configs_added: List[int] = []
+        basis_sizes: list[int] = [basis.shape[0]]
+        energies: list[float] = [current_energy]
+        configs_added: list[int] = []
 
         for iteration in range(self.config.max_iterations):
             if basis.shape[0] >= self.config.max_basis_size:
@@ -246,7 +246,7 @@ class ResidualBasedExpander:
 
         total_improvement_mha = (initial_energy - current_energy) * 1000.0
 
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "iterations": len(configs_added),
             "initial_energy": initial_energy,
             "final_energy": current_energy,

@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -133,8 +133,8 @@ class SKQDConfig:
 def _build_projected_matrices(
     hamiltonian: Hamiltonian,
     basis_configs: torch.Tensor,
-    device: Optional[torch.device] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+    device: torch.device | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """Build projected H and S matrices in a sampled configuration basis.
 
     Parameters
@@ -181,7 +181,7 @@ def _solve_generalised_eigenproblem(
     num_eigenvalues: int,
     regularization: float,
     use_gpu: bool = True,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Solve the generalized eigenvalue problem ``H v = E S v``.
 
     When a CUDA device is available and ``use_gpu`` is ``True``, the problem is
@@ -297,7 +297,7 @@ class SampleBasedKrylovDiagonalization:
         self,
         hamiltonian: Hamiltonian,
         config: SKQDConfig,
-        initial_state: Optional[np.ndarray] = None,
+        initial_state: np.ndarray | None = None,
     ) -> None:
         self.hamiltonian = hamiltonian
         self.config = config
@@ -326,8 +326,8 @@ class SampleBasedKrylovDiagonalization:
         self._subspace_hash_to_idx = self._build_subspace_index()
 
         # Precompute GPU matrix exponential for Krylov time evolution
-        self._exp_dt_gpu: Optional[torch.Tensor] = None
-        self._initial_state_gpu: Optional[torch.Tensor] = None
+        self._exp_dt_gpu: torch.Tensor | None = None
+        self._initial_state_gpu: torch.Tensor | None = None
 
         # Initial state
         if initial_state is not None:
@@ -356,7 +356,7 @@ class SampleBasedKrylovDiagonalization:
         state[0] = 1.0
         return state
 
-    def _build_subspace_index(self) -> Dict[int, int]:
+    def _build_subspace_index(self) -> dict[int, int]:
         """Build a hash→index mapping for the subspace configurations.
 
         Uses the Hamiltonian's ``_config_hash_batch`` when available for
@@ -413,7 +413,7 @@ class SampleBasedKrylovDiagonalization:
 
     def extract_projected_submatrix(
         self, configs: torch.Tensor
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Extract projected H and S from the precomputed dense Hamiltonian.
 
         Maps each configuration in *configs* to its index in the full
@@ -488,7 +488,7 @@ class SampleBasedKrylovDiagonalization:
         n_beta = integrals.n_beta
         num_qubits = 2 * n_orb
 
-        configs: List[List[int]] = []
+        configs: list[list[int]] = []
 
         # Alpha orbitals: qubits [0, n_orb)
         # Beta orbitals: qubits [n_orb, 2*n_orb)
@@ -597,7 +597,7 @@ class SampleBasedKrylovDiagonalization:
     # Public API
     # ------------------------------------------------------------------
 
-    def run(self) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def run(self) -> tuple[np.ndarray, dict[str, Any]]:
         """Execute the full SKQD algorithm.
 
         Constructs Krylov states iteratively, samples configurations from
@@ -618,8 +618,8 @@ class SampleBasedKrylovDiagonalization:
               estimate after each Krylov expansion step.
             - ``"basis_configs"`` : torch.Tensor — final basis configurations.
         """
-        all_configs: Optional[torch.Tensor] = None
-        energies_per_step: List[float] = []
+        all_configs: torch.Tensor | None = None
+        energies_per_step: list[float] = []
 
         for k in range(self.config.max_krylov_dim):
             logger.info("Computing Krylov state k=%d", k)
@@ -662,7 +662,7 @@ class SampleBasedKrylovDiagonalization:
             self.config.regularization,
         )
 
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "basis_size": all_configs.shape[0],
             "krylov_dim": self.config.max_krylov_dim,
             "energies_per_step": energies_per_step,

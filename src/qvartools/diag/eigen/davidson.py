@@ -15,7 +15,7 @@ DavidsonSolver
 from __future__ import annotations
 
 import logging
-from typing import Tuple, Union
+from typing import Union
 
 import numpy as np
 import scipy.linalg
@@ -77,7 +77,7 @@ class DavidsonSolver:
         self,
         H: _MatrixLike,
         k: int = 1,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Compute the lowest ``k`` eigenvalues and eigenvectors of ``H``.
 
         Parameters

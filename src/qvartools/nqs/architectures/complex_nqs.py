@@ -8,13 +8,11 @@ and separate amplitude/phase heads.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import torch
 import torch.nn as nn
 
-from qvartools.nqs.neural_state import NeuralQuantumState
 from qvartools.nqs.architectures.rbm import RBMQuantumState  # noqa: F401
+from qvartools.nqs.neural_state import NeuralQuantumState
 
 __all__ = [
     "ComplexNQS",
@@ -67,7 +65,7 @@ class ComplexNQS(NeuralQuantumState):
     def __init__(
         self,
         num_sites: int,
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: list[int] | None = None,
     ) -> None:
         super().__init__(
             num_sites=num_sites,
@@ -98,8 +96,8 @@ class ComplexNQS(NeuralQuantumState):
         )
 
         # Feature cache
-        self._cached_input_id: Optional[int] = None
-        self._cached_features: Optional[torch.Tensor] = None
+        self._cached_input_id: int | None = None
+        self._cached_features: torch.Tensor | None = None
 
     def _get_features(self, x: torch.Tensor) -> torch.Tensor:
         """Compute (or retrieve cached) shared features.

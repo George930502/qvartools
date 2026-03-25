@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import torch
 import pytest
+import torch
 
 from qvartools.nqs.architectures.dense import DenseNQS, SignedDenseNQS, compile_nqs
-
 
 # ---------------------------------------------------------------------------
 # DenseNQS

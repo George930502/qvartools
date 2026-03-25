@@ -18,7 +18,6 @@ KrylovBasisSampler
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
 
 import numpy as np
 from scipy.sparse.linalg import expm_multiply
@@ -94,7 +93,7 @@ class KrylovBasisSampler:
         self.time_step = time_step
 
         # Pre-build dense Hamiltonian for classical simulation
-        self._h_dense: Optional[np.ndarray] = None
+        self._h_dense: np.ndarray | None = None
 
     @property
     def h_dense(self) -> np.ndarray:
@@ -113,8 +112,8 @@ class KrylovBasisSampler:
     def sample_krylov_state(
         self,
         krylov_power: int,
-        initial_state: Optional[np.ndarray] = None,
-    ) -> Dict[str, int]:
+        initial_state: np.ndarray | None = None,
+    ) -> dict[str, int]:
         r"""Sample configurations from a Krylov-evolved state.
 
         Computes :math:`|\psi_k\rangle = e^{-iH \Delta t \cdot k} |\psi_0\rangle`
@@ -169,7 +168,7 @@ class KrylovBasisSampler:
         self,
         krylov_power: int,
         initial_state: np.ndarray,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         r"""Classical simulation backend for Krylov sampling.
 
         Parameters
@@ -219,7 +218,7 @@ class KrylovBasisSampler:
         )
 
         # Convert to bitstring counts
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for idx in sampled_indices:
             bitstring = format(int(idx), f"0{self.num_qubits}b")
             counts[bitstring] = counts.get(bitstring, 0) + 1
