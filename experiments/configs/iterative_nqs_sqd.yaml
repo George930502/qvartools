@@ -29,7 +29,7 @@ n_layers: 4                   # Number of transformer layers
 temperature: 1.0              # Sampling temperature
 
 # ---- IBM solver -------------------------------------------------------------
-use_ibm_solver: true          # Use IBM's SQD solver backend
+use_ibm_solver: false         # IBM solver disabled (API v0.12 incompatible with teacher training)
 
 # ---- Hardware ---------------------------------------------------------------
 device: auto                  # Torch device: auto (detect cuda/cpu), cpu, cuda

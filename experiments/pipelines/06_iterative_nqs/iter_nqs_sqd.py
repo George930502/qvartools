@@ -1,11 +1,11 @@
-"""HI+NQS+SQD --- Iterative NQS sampling + subspace diag + eigenvector feedback.
+"""Pipeline 06c: Iterative NQS + SQD (direct diag, no Krylov).
 
 Iterative pipeline that trains an autoregressive transformer NQS,
 samples configurations, diagonalises in the sampled basis (SQD), and
 feeds the eigenvector back as a teacher signal for the next iteration.
 
-This is the direct-diagonalization variant: unlike HI+NQS+SKQD, no
-Krylov expansion is applied after sampling.
+This is the direct-diagonalization variant: unlike the Krylov pipelines,
+no basis expansion is applied after sampling.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from pathlib import Path
 import torch
 
 # Make the experiments package importable when running as a script.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from config_loader import create_base_parser, load_config  # noqa: E402
 
 from qvartools.methods.nqs.hi_nqs_sqd import HINQSSQDConfig, run_hi_nqs_sqd
@@ -41,7 +41,9 @@ def main() -> None:
     )
 
     # --- Parse CLI / YAML config ---
-    parser = create_base_parser("HI+NQS+SQD: iterative NQS + subspace diag.")
+    parser = create_base_parser(
+        "Pipeline 06c: Iterative NQS + SQD (direct diag)."
+    )
     parser.add_argument(
         "--max-iterations",
         type=int,
@@ -100,18 +102,21 @@ def main() -> None:
     energies = result.metadata.get("energy_history", [])
     basis_sizes = result.metadata.get("basis_sizes_per_iteration", [])
 
-    print("\nIteration-by-iteration convergence:")
-    print(f"  {'Iter':>4}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Basis':>8}")
-    print("  " + "-" * 50)
+    if energies:
+        print("\nIteration-by-iteration convergence:")
+        print(f"  {'Iter':>4}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Basis':>8}")
+        print("  " + "-" * 50)
 
-    for i, energy in enumerate(energies):
-        err_mha = (energy - exact_energy) * 1000.0
-        basis = basis_sizes[i] if i < len(basis_sizes) else 0
-        print(f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}")
+        for i, energy in enumerate(energies):
+            err_mha = (energy - exact_energy) * 1000.0
+            basis = basis_sizes[i] if i < len(basis_sizes) else 0
+            print(
+                f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}"
+            )
 
     # --- Final summary ---
     print("\n" + "=" * 60)
-    print("HI+NQS+SQD RESULTS")
+    print("PIPELINE 06c: ITERATIVE NQS + SQD RESULTS")
     print("=" * 60)
     error_mha = (result.energy - exact_energy) * 1000.0
     within = "YES" if abs(error_mha) < CHEMICAL_ACCURACY_MHA else "NO"

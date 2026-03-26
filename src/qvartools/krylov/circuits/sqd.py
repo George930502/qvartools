@@ -753,32 +753,37 @@ class SQDSolver:
             E0 = float(H_work[0, 0].cpu())
             ground_state = torch.ones(1, dtype=H_work.dtype, device=device)
         else:
+            H_np = H_work.detach().cpu().numpy()
             try:
-                if gpu_eigsh is not None:
+                if gpu_eigsh is not None and n > 10:
                     k_eig = min(2, n - 1)
-                    eigenvalues, eigenvectors = gpu_eigsh(
-                        H_work, k=k_eig, which="SA", use_gpu=True
-                    )
+                    eigenvalues_np, eigenvectors_np = gpu_eigsh(H_np, k=k_eig)
                 elif gpu_eigh is not None:
-                    eigenvalues, eigenvectors = gpu_eigh(H_work, use_gpu=True)
+                    eigenvalues_np, eigenvectors_np = gpu_eigh(H_np)
                 else:
-                    raise RuntimeError("No GPU eigensolver available")
+                    eigenvalues_np, eigenvectors_np = np.linalg.eigh(H_np)
 
-                E0 = float(eigenvalues[0].cpu())
-                ground_state = eigenvectors[:, 0].double()
+                E0 = float(eigenvalues_np[0])
+                ground_state = (
+                    torch.from_numpy(eigenvectors_np[:, 0].copy())
+                    .double()
+                    .to(H_work.device)
+                )
             except Exception as e:
                 print(
                     f"WARNING: GPU eigensolver failed ({type(e).__name__}: {e}), "
                     f"falling back to CPU"
                 )
-                H_np = H_work.detach().cpu().numpy()
                 eigenvalues_np, eigenvectors_np = np.linalg.eigh(H_np)
                 E0 = float(eigenvalues_np[0])
                 ground_state = (
-                    torch.from_numpy(eigenvectors_np[:, 0]).double().to(device)
+                    torch.from_numpy(eigenvectors_np[:, 0].copy())
+                    .double()
+                    .to(H_work.device)
                 )
 
         # Compute variance on GPU: <H^2> - <H>^2
+        ground_state = ground_state.to(H_work.device)
         Hv = H_work @ ground_state
         H2_expectation = float(torch.dot(ground_state, H_work @ Hv).cpu())
         variance = H2_expectation - E0**2
@@ -879,7 +884,11 @@ class SQDSolver:
             configs = result["batch"]
 
             if isinstance(coeffs, np.ndarray):
-                coeffs = torch.from_numpy(coeffs).to(configs.device)
+                coeffs = torch.from_numpy(coeffs)
+
+            # Ensure both on same device
+            target_device = coeffs.device
+            configs = configs.to(target_device)
 
             probs = (coeffs * coeffs).double()
             occ_k = probs @ configs.double()

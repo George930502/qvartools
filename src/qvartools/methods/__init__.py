@@ -16,6 +16,12 @@ run_nqs_skqd
     NQS+SKQD: two-stage (train NQS then SKQD).
 run_nqs_sqd
     NQS+SQD: two-stage (train NQS then SQD).
+run_quantum_skqd
+    Quantum circuit SKQD: Trotterized exp_pauli Krylov evolution
+    (molecular systems).
+run_quantum_skqd_spin
+    Quantum circuit SKQD: Trotterized exp_pauli Krylov evolution
+    (Heisenberg spin chains).
 """
 
 from __future__ import annotations
@@ -24,6 +30,14 @@ from qvartools.methods.nqs.hi_nqs_skqd import HINQSSKQDConfig, run_hi_nqs_skqd
 from qvartools.methods.nqs.hi_nqs_sqd import HINQSSQDConfig, run_hi_nqs_sqd
 from qvartools.methods.nqs.nqs_skqd import NQSSKQDConfig, run_nqs_skqd
 from qvartools.methods.nqs.nqs_sqd import NQSSQDConfig, run_nqs_sqd
+from qvartools.methods.quantum_circuit.molecular import (
+    QuantumSKQDMethodConfig,
+    run_quantum_skqd,
+)
+from qvartools.methods.quantum_circuit.spin import (
+    QuantumSKQDSpinConfig,
+    run_quantum_skqd_spin,
+)
 
 __all__ = [
     "HINQSSQDConfig",
@@ -34,4 +48,8 @@ __all__ = [
     "run_nqs_skqd",
     "NQSSQDConfig",
     "run_nqs_sqd",
+    "QuantumSKQDMethodConfig",
+    "run_quantum_skqd",
+    "QuantumSKQDSpinConfig",
+    "run_quantum_skqd_spin",
 ]

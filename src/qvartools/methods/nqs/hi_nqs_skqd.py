@@ -104,7 +104,9 @@ class HINQSSKQDConfig:
         Number of reference configs for Krylov expansion
         (default ``10``).
     use_ibm_solver : bool
-        Use IBM solver when available (default ``True``).
+        Use IBM solver when available (default ``False``).
+        Set to ``True`` only if ``qiskit_addon_sqd`` is installed with a
+        compatible API version.
     device : str
         Torch device (default ``"cpu"``).
     """
@@ -122,7 +124,7 @@ class HINQSSKQDConfig:
     temperature: float = 1.0
     krylov_max_new: int = 500
     krylov_n_ref: int = 10
-    use_ibm_solver: bool = True
+    use_ibm_solver: bool = False
     device: str = "cpu"
 
 
@@ -219,10 +221,11 @@ def run_hi_nqs_skqd(
     """
     cfg = config or HINQSSKQDConfig()
 
-    n_orb: int = mol_info["n_orbitals"]
-    n_alpha: int = mol_info["n_alpha"]
-    n_beta: int = mol_info["n_beta"]
-    n_qubits: int = mol_info["n_qubits"]
+    # Support mol_info with or without orbital counts (fall back to hamiltonian)
+    n_orb: int = mol_info.get("n_orbitals") or hamiltonian.integrals.n_orbitals
+    n_alpha: int = mol_info.get("n_alpha") or hamiltonian.integrals.n_alpha
+    n_beta: int = mol_info.get("n_beta") or hamiltonian.integrals.n_beta
+    n_qubits: int = mol_info.get("n_qubits", 2 * n_orb)
     device = torch.device(cfg.device)
 
     logger.info(
@@ -316,14 +319,21 @@ def run_hi_nqs_skqd(
 
             if _IBM_SQD_AVAILABLE and cfg.use_ibm_solver:
                 ibm_data = configs_to_ibm_format(batch_configs, n_orb, n_qubits)
-                recovered = recover_configurations(
+                n_samples = ibm_data.shape[0]
+                uniform_probs = np.ones(n_samples) / n_samples
+                refined_matrix, _ = recover_configurations(
                     ibm_data,
-                    (n_alpha, n_beta),
+                    uniform_probs,
                     (occ_alpha, occ_beta),
+                    num_elec_a=n_alpha,
+                    num_elec_b=n_beta,
                 )
-                e_b, coeffs_b, occs_b = ibm_solve_fermion(
-                    recovered, (n_alpha, n_beta), mol_info
+                e_b, sci_state, occs_b, _ = ibm_solve_fermion(
+                    refined_matrix,
+                    hcore=hamiltonian.integrals.h1e,
+                    eri=hamiltonian.integrals.h2e,
                 )
+                coeffs_b = sci_state.amplitudes
             else:
                 e_b, coeffs_b, occs_b = gpu_solve_fermion(batch_configs, hamiltonian)
 

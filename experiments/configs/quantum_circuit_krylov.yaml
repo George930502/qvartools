@@ -1,0 +1,20 @@
+# Quantum Circuit SKQD --- Trotterized exp_pauli Krylov evolution
+#
+# Uses QuantumCircuitSKQD for Krylov state generation instead of
+# the classical exact matrix exponential.
+
+molecule: h2
+
+# Krylov parameters
+max_krylov_dim: 12
+total_evolution_time: 3.14159265  # pi
+num_trotter_steps: 1    # single S2(dt) per evolution
+trotter_order: 2         # second-order Suzuki-Trotter
+
+# Sampling
+shots: 100000
+
+# Backend: "auto" (CUDA-Q if available), "cudaq", "classical", "exact", "lanczos"
+backend: auto
+
+device: auto

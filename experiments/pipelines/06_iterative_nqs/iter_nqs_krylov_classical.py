@@ -1,11 +1,11 @@
-"""HI+NQS+SQD --- Iterative NQS sampling + subspace diag + eigenvector feedback.
+"""Pipeline 06a: Iterative NQS + Krylov expansion (H-connections) + GPU diag.
 
 Iterative pipeline that trains an autoregressive transformer NQS,
-samples configurations, diagonalises in the sampled basis (SQD), and
-feeds the eigenvector back as a teacher signal for the next iteration.
+samples configurations, expands the basis via Hamiltonian connections
+(Krylov-style), and diagonalises in the enlarged subspace.  The
+eigenvector is fed back as a teacher signal for the next iteration.
 
-This is the direct-diagonalization variant: unlike HI+NQS+SKQD, no
-Krylov expansion is applied after sampling.
+This is the existing iterative NQS+SKQD method wrapped as a pipeline script.
 """
 
 from __future__ import annotations
@@ -18,10 +18,10 @@ from pathlib import Path
 import torch
 
 # Make the experiments package importable when running as a script.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from config_loader import create_base_parser, load_config  # noqa: E402
 
-from qvartools.methods.nqs.hi_nqs_sqd import HINQSSQDConfig, run_hi_nqs_sqd
+from qvartools.methods.nqs.hi_nqs_skqd import HINQSSKQDConfig, run_hi_nqs_skqd
 from qvartools.molecules import get_molecule
 from qvartools.solvers import FCISolver
 
@@ -41,7 +41,9 @@ def main() -> None:
     )
 
     # --- Parse CLI / YAML config ---
-    parser = create_base_parser("HI+NQS+SQD: iterative NQS + subspace diag.")
+    parser = create_base_parser(
+        "Pipeline 06a: Iterative NQS + Krylov expansion (classical)."
+    )
     parser.add_argument(
         "--max-iterations",
         type=int,
@@ -81,37 +83,39 @@ def main() -> None:
     print(f"Exact (FCI) energy: {exact_energy:.10f} Ha\n")
 
     # --- Configure ---
-    config_obj = HINQSSQDConfig(
+    config_obj = HINQSSKQDConfig(
         n_iterations=config.get("max_iterations", 10),
         n_samples_per_iter=n_samp,
-        nqs_train_epochs=config.get("nqs_train_epochs", 50),
-        nqs_lr=config.get("nqs_lr", 1e-3),
-        energy_tol=config.get("convergence_tol", config.get("energy_tol", 1e-5)),
-        use_ibm_solver=config.get("use_ibm_solver", False),
+        nqs_train_epochs=config.get("nqs_train_epochs", 30),
+        krylov_max_new=config.get("krylov_max_new", 200),
+        krylov_n_ref=config.get("krylov_n_ref", 5),
         device=device,
     )
 
     # --- Run ---
     t_start = time.perf_counter()
-    result = run_hi_nqs_sqd(hamiltonian, mol_info, config=config_obj)
+    result = run_hi_nqs_skqd(hamiltonian, mol_info, config=config_obj)
     wall_time = time.perf_counter() - t_start
 
     # --- Print convergence ---
     energies = result.metadata.get("energy_history", [])
-    basis_sizes = result.metadata.get("basis_sizes_per_iteration", [])
+    basis_sizes = result.metadata.get("basis_size_history", [])
 
-    print("\nIteration-by-iteration convergence:")
-    print(f"  {'Iter':>4}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Basis':>8}")
-    print("  " + "-" * 50)
+    if energies:
+        print("\nIteration-by-iteration convergence:")
+        print(f"  {'Iter':>4}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Basis':>8}")
+        print("  " + "-" * 50)
 
-    for i, energy in enumerate(energies):
-        err_mha = (energy - exact_energy) * 1000.0
-        basis = basis_sizes[i] if i < len(basis_sizes) else 0
-        print(f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}")
+        for i, energy in enumerate(energies):
+            err_mha = (energy - exact_energy) * 1000.0
+            basis = basis_sizes[i] if i < len(basis_sizes) else 0
+            print(
+                f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}"
+            )
 
     # --- Final summary ---
     print("\n" + "=" * 60)
-    print("HI+NQS+SQD RESULTS")
+    print("PIPELINE 06a: ITERATIVE NQS + KRYLOV (CLASSICAL) RESULTS")
     print("=" * 60)
     error_mha = (result.energy - exact_energy) * 1000.0
     within = "YES" if abs(error_mha) < CHEMICAL_ACCURACY_MHA else "NO"

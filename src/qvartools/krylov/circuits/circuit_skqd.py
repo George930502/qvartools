@@ -1937,7 +1937,7 @@ class QuantumCircuitSKQD:
             f"Jordan-Wigner transformation: {n_orb} orbitals -> {2 * n_orb} qubits..."
         )
         coefficients, pauli_words, constant = molecular_hamiltonian_to_pauli(
-            h1e, h2e, hamiltonian.nuclear_repulsion, n_orb
+            h1e, h2e, hamiltonian.E_nuc, n_orb
         )
         print(f"  {len(coefficients)} Pauli terms + constant = {constant:.8f}")
 
