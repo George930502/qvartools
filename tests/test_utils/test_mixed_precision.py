@@ -81,6 +81,14 @@ class TestMixedPrecisionEigh:
         assert vals.dtype == torch.float64
         assert vecs.dtype == torch.float64
 
+    def test_complex_input_raises(self) -> None:
+        """Complex input should raise TypeError."""
+        from qvartools._utils.gpu.linear_algebra import mixed_precision_eigh
+
+        H = torch.eye(3, dtype=torch.complex128)
+        with pytest.raises(TypeError, match="real symmetric"):
+            mixed_precision_eigh(H)
+
     def test_eigenvectors_orthonormal(self) -> None:
         """Eigenvectors should be orthonormal."""
         from qvartools._utils.gpu.linear_algebra import mixed_precision_eigh

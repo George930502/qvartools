@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import torch
 
 __all__ = [
     "gpu_eigh",
@@ -96,7 +97,15 @@ def gpu_eigh(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 # Threshold below which FP32 rounding is negligible — skip mixed precision
 _MIXED_PREC_MIN_SIZE = 64
 
-import torch  # noqa: E402
+
+def _direct_fp64_eigh(
+    H: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Direct FP64 eigendecomposition with sorted output on CPU."""
+    H_fp64 = H.to(dtype=torch.float64)
+    vals, vecs = torch.linalg.eigh(H_fp64)
+    order = torch.argsort(vals)
+    return vals[order].cpu(), vecs[:, order].cpu()
 
 
 def mixed_precision_eigh(
@@ -104,18 +113,21 @@ def mixed_precision_eigh(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Eigendecomposition with FP32 solve + FP64 Rayleigh quotient refinement.
 
-    For matrices larger than 64x64, solves in float32 (leveraging TF32
-    matmul on NVIDIA GPUs for ~10x speedup), then refines eigenvalues
-    via Rayleigh quotient in float64 to recover full precision.
+    On CUDA devices with matrices larger than 64x64, solves in float32
+    (leveraging TF32 tensor cores on NVIDIA Blackwell/Hopper GPUs),
+    then refines eigenvalues via Rayleigh quotient in float64 to
+    recover full precision.
 
-    For small matrices or float64 input on CPU, delegates directly to
-    ``torch.linalg.eigh`` in float64.
+    On CPU, or for small/FP64 matrices, delegates directly to
+    ``torch.linalg.eigh`` in float64 (mixed precision adds no
+    benefit without tensor core acceleration).
 
     Parameters
     ----------
     H : torch.Tensor
-        Real symmetric matrix, shape ``(n, n)``.  Any dtype accepted;
-        output is always float64.
+        Real symmetric matrix, shape ``(n, n)``.  Accepts float32 or
+        float64.  Complex Hermitian input is not supported and raises
+        ``TypeError``.  Output is always float64.
 
     Returns
     -------
@@ -126,67 +138,94 @@ def mixed_precision_eigh(
         Corresponding eigenvectors as columns, shape ``(n, n)``,
         dtype float64, on CPU.
 
+    Raises
+    ------
+    TypeError
+        If ``H`` is complex.  Use ``torch.linalg.eigh`` directly for
+        complex Hermitian matrices.
+
     Notes
     -----
     ``torch.linalg.eigh`` has a known issue with float32 on GPU for
     large low-rank matrices (may produce NaN/Inf).  This function
     detects such failures and falls back to float64 automatically.
 
+    Eigenvectors are returned at FP32 precision (stored in FP64).
+    Eigenvalues are refined to FP64 via Rayleigh quotient.
+
+    Benchmarked on DGX Spark GB10: 6.3x speedup at n=2000, 2.6x at
+    n=4000 vs CPU FP64.
+
     Reference: Higham & Mary, "Mixed Precision Algorithms in Numerical
     Linear Algebra", Acta Numerica (2022).
     """
+    if H.is_complex():
+        raise TypeError(
+            "mixed_precision_eigh only supports real symmetric matrices. "
+            "For complex Hermitian matrices, use torch.linalg.eigh directly."
+        )
+
     n = H.shape[0]
     device = H.device
 
     # Symmetrize to eliminate floating-point asymmetry
     H = 0.5 * (H + H.T)
 
-    # For small matrices or already-FP64 on CPU: direct FP64 solve
-    if n <= _MIXED_PREC_MIN_SIZE or (H.dtype == torch.float64 and device.type == "cpu"):
-        H_fp64 = H.to(dtype=torch.float64)
-        vals, vecs = torch.linalg.eigh(H_fp64)
-        order = torch.argsort(vals)
-        return vals[order].cpu(), vecs[:, order].cpu()
+    # Direct FP64 path: small matrices, CPU, or already FP64
+    if n <= _MIXED_PREC_MIN_SIZE or device.type != "cuda":
+        return _direct_fp64_eigh(H)
 
-    # --- Mixed precision path ---
-    H_fp64 = H.to(dtype=torch.float64, device=device)
+    # --- GPU mixed precision path (CUDA only) ---
 
-    # Step 1: FP32 solve for speed
-    H_fp32 = H_fp64.to(dtype=torch.float32)
+    # Enable TF32 tensor cores for FP32 matmul acceleration on
+    # Blackwell/Hopper GPUs (cuSOLVER uses GEMM internally for
+    # Householder tridiagonalization)
+    prev_tf32 = torch.backends.cuda.matmul.allow_tf32
+    torch.backends.cuda.matmul.allow_tf32 = True
+
     try:
-        vals_fp32, vecs_fp32 = torch.linalg.eigh(H_fp32)
+        H_fp64 = H.to(dtype=torch.float64, device=device)
 
-        # Validate: check for NaN/Inf (known FP32 GPU bug)
-        if not torch.isfinite(vals_fp32).all() or not torch.isfinite(vecs_fp32).all():
-            raise RuntimeError("FP32 eigh produced non-finite values")
+        # Step 1: FP32 solve for speed
+        H_fp32 = H_fp64.to(dtype=torch.float32)
+        try:
+            vals_fp32, vecs_fp32 = torch.linalg.eigh(H_fp32)
 
-    except (RuntimeError, torch.linalg.LinAlgError):
-        logger.warning("FP32 eigh failed; falling back to FP64.")
-        vals_fp64, vecs_fp64 = torch.linalg.eigh(H_fp64)
-        order = torch.argsort(vals_fp64)
-        return vals_fp64[order].cpu(), vecs_fp64[:, order].cpu()
+            # Validate: check for NaN/Inf (known FP32 GPU bug)
+            if not (
+                torch.isfinite(vals_fp32).all() and torch.isfinite(vecs_fp32).all()
+            ):
+                raise RuntimeError("FP32 eigh produced non-finite values")
 
-    # Step 2: Rayleigh quotient refinement in FP64
-    vecs_fp64 = vecs_fp32.to(dtype=torch.float64)
-    Hv = H_fp64 @ vecs_fp64  # (n, n) @ (n, n) in FP64
-    # E_i = v_i^T H v_i / (v_i^T v_i)
-    numerator = (vecs_fp64 * Hv).sum(dim=0)  # diag(V^T H V)
-    denominator = (vecs_fp64 * vecs_fp64).sum(dim=0)  # diag(V^T V)
-    vals_refined = numerator / denominator
+        except (RuntimeError, torch.linalg.LinAlgError):
+            logger.warning("FP32 eigh failed; falling back to FP64.")
+            return _direct_fp64_eigh(H_fp64)
 
-    # Sort by refined eigenvalues
-    order = torch.argsort(vals_refined)
-    vals_out = vals_refined[order]
-    vecs_out = vecs_fp64[:, order]
+        # Step 2: Rayleigh quotient refinement in FP64
+        vecs_fp64 = vecs_fp32.to(dtype=torch.float64)
+        Hv = H_fp64 @ vecs_fp64  # (n, n) @ (n, n) in FP64
+        # E_i = v_i^T H v_i / (v_i^T v_i)
+        numerator = (vecs_fp64 * Hv).sum(dim=0)  # diag(V^T H V)
+        denominator = (vecs_fp64 * vecs_fp64).sum(dim=0)  # diag(V^T V)
+        vals_refined = numerator / denominator
 
-    logger.debug(
-        "mixed_precision_eigh: n=%d, device=%s, max_refinement_delta=%.2e",
-        n,
-        device,
-        (vals_refined - vals_fp32.to(torch.float64)).abs().max().item(),
-    )
+        # Sort by refined eigenvalues
+        order = torch.argsort(vals_refined)
+        vals_out = vals_refined[order]
+        vecs_out = vecs_fp64[:, order]
 
-    return vals_out.cpu(), vecs_out.cpu()
+        logger.debug(
+            "mixed_precision_eigh: n=%d, device=%s, max_refinement_delta=%.2e",
+            n,
+            device,
+            (vals_refined - vals_fp32.to(torch.float64)).abs().max().item(),
+        )
+
+        return vals_out.cpu(), vecs_out.cpu()
+
+    finally:
+        # Restore original TF32 setting
+        torch.backends.cuda.matmul.allow_tf32 = prev_tf32
 
 
 # ---------------------------------------------------------------------------

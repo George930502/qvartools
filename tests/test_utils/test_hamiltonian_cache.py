@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+
 import numpy as np
 import pytest
 
@@ -18,40 +20,42 @@ class TestHamiltonianCache:
 
         assert callable(cached_compute_molecular_integrals)
 
-    def test_returns_molecular_integrals(self) -> None:
+    def test_returns_molecular_integrals(self, tmp_path) -> None:
         """Should return a MolecularIntegrals dataclass."""
         from qvartools.hamiltonians.integrals import (
             MolecularIntegrals,
-            cached_compute_molecular_integrals,
+            get_integral_cache,
         )
 
+        cache = get_integral_cache(str(tmp_path / "cache"))
         geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.74))]
-        result = cached_compute_molecular_integrals(geometry, basis="sto-3g")
+        result = cache(geometry, basis="sto-3g")
         assert isinstance(result, MolecularIntegrals)
         assert result.n_orbitals == 2
         assert result.n_electrons == 2
 
     def test_second_call_is_cached(self, tmp_path) -> None:
-        """Second call with same args should use cache (faster)."""
-        import time
-
+        """Second call with same args should reuse on-disk cache."""
         from qvartools.hamiltonians.integrals import get_integral_cache
 
-        cache = get_integral_cache(str(tmp_path / "cache"))
+        cache_dir = tmp_path / "cache"
+        cache = get_integral_cache(str(cache_dir))
         geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.74))]
 
-        # First call — computes
-        t0 = time.perf_counter()
+        # First call — should create cache entries on disk
         r1 = cache(geometry, basis="sto-3g")
-        t_first = time.perf_counter() - t0
+        cache_files_after_first = sorted(
+            p.relative_to(cache_dir) for p in cache_dir.rglob("*") if p.is_file()
+        )
+        assert len(cache_files_after_first) > 0
 
-        # Second call — should be cached
-        t0 = time.perf_counter()
+        # Second call — should reuse existing cache (no new files)
         r2 = cache(geometry, basis="sto-3g")
-        t_second = time.perf_counter() - t0
+        cache_files_after_second = sorted(
+            p.relative_to(cache_dir) for p in cache_dir.rglob("*") if p.is_file()
+        )
+        assert cache_files_after_second == cache_files_after_first
 
-        # Cached call should be significantly faster
-        assert t_second < t_first or t_first < 0.1  # very fast compute is OK too
         # Results should match
         np.testing.assert_array_equal(r1.h1e, r2.h1e)
         np.testing.assert_array_equal(r1.h2e, r2.h2e)
@@ -78,18 +82,14 @@ class TestHamiltonianCache:
             get_integral_cache,
         )
 
-        cache_dir = str(tmp_path / "cache")
+        cache_dir = str(tmp_path / "qvartools_cache")
         cache = get_integral_cache(cache_dir)
         geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.74))]
         cache(geometry, basis="sto-3g")
 
         clear_integral_cache(cache_dir)
 
-        # After clear, cache directory should be empty or removed
-        import pathlib
-
         cache_path = pathlib.Path(cache_dir)
         if cache_path.exists():
-            # joblib may leave directory but should have no cached results
-            cached_files = list(cache_path.rglob("*.npy"))
-            assert len(cached_files) == 0
+            remaining = [p for p in cache_path.rglob("*") if p.is_file()]
+            assert len(remaining) == 0

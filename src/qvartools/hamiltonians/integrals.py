@@ -10,9 +10,15 @@ returns a populated ``MolecularIntegrals`` instance.
 
 from __future__ import annotations
 
+import logging
+import os
+import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "MATRIX_ELEMENT_TOL",
@@ -196,13 +202,6 @@ def compute_molecular_integrals(
 # Persistent cache via joblib
 # ---------------------------------------------------------------------------
 
-import logging
-import os
-import shutil
-from collections.abc import Callable
-
-logger = logging.getLogger(__name__)
-
 _DEFAULT_CACHE_DIR = os.path.join(
     os.environ.get("QVARTOOLS_CACHE_DIR", os.path.expanduser("~/.cache/qvartools")),
     "integrals",
@@ -294,6 +293,12 @@ def clear_integral_cache(cache_dir: str | None = None) -> None:
         used by :func:`get_integral_cache`.
     """
     location = cache_dir if cache_dir is not None else _DEFAULT_CACHE_DIR
+    # Safety: refuse to delete directories that don't look like a cache
+    if "qvartools" not in location and "cache" not in location.lower():
+        raise ValueError(
+            f"Refusing to delete '{location}' — path does not contain "
+            f"'qvartools' or 'cache'. Pass an explicit cache directory."
+        )
     if os.path.isdir(location):
         shutil.rmtree(location)
         logger.info("Integral cache cleared at %s", location)
