@@ -189,7 +189,7 @@ def main() -> None:
     mol_info["n_beta"] = n_beta
 
     skqd_config = HINQSSKQDConfig(
-        n_iterations=config.get("n_iterations", 10),
+        n_iterations=config.get("max_iterations", 10),
         n_samples_per_iter=config.get("n_samples_per_iter", 5000),
         nqs_train_epochs=config.get("nqs_train_epochs", 30),
         krylov_max_new=config.get("krylov_max_new", 200),
