@@ -83,9 +83,7 @@ class ComparisonConfig:
 
     def __post_init__(self) -> None:
         if self.max_krylov_dim < 2:
-            raise ValueError(
-                f"max_krylov_dim must be >= 2, got {self.max_krylov_dim}"
-            )
+            raise ValueError(f"max_krylov_dim must be >= 2, got {self.max_krylov_dim}")
 
 
 # ---------------------------------------------------------------------------
@@ -121,9 +119,7 @@ def compare_krylov_generators(
         and ``"summary"``.
     """
     cfg = config or ComparisonConfig()
-    dt = cfg.classical_time_step or (
-        cfg.total_evolution_time / cfg.num_trotter_steps
-    )
+    dt = cfg.classical_time_step or (cfg.total_evolution_time / cfg.num_trotter_steps)
     mol_name = mol_info.get("name", "unknown")
 
     print(f"{'=' * 70}")
@@ -150,9 +146,7 @@ def compare_krylov_generators(
     )
 
     t_start = time.perf_counter()
-    classical_skqd = ClassicalKrylovDiagonalization(
-        hamiltonian, classical_config
-    )
+    classical_skqd = ClassicalKrylovDiagonalization(hamiltonian, classical_config)
     classical_eigenvalues, classical_info = classical_skqd.run()
     classical_time = time.perf_counter() - t_start
 
@@ -194,7 +188,9 @@ def compare_krylov_generators(
 
     print(f"  Energy : {quantum_energy:.10f} Ha")
     print(f"  Error  : {quantum_error_mha:.4f} mHa")
-    print(f"  Basis  : {quantum_results['basis_sizes'][-1] if quantum_results['basis_sizes'] else '?'}")
+    print(
+        f"  Basis  : {quantum_results['basis_sizes'][-1] if quantum_results['basis_sizes'] else '?'}"
+    )
     print(f"  Time   : {quantum_time:.2f} s")
     print(f"  Backend: {quantum_results['backend']}")
 
@@ -240,6 +236,8 @@ def compare_krylov_generators(
             "exact_energy": exact_energy,
             "energy_delta": quantum_energy - classical_energy,
             "error_delta_mha": quantum_error_mha - classical_error_mha,
-            "speedup": classical_time / quantum_time if quantum_time > 0 else float("inf"),
+            "speedup": classical_time / quantum_time
+            if quantum_time > 0
+            else float("inf"),
         },
     }

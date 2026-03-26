@@ -109,9 +109,7 @@ def main() -> None:
         for i, energy in enumerate(energies):
             err_mha = (energy - exact_energy) * 1000.0
             basis = basis_sizes[i] if i < len(basis_sizes) else 0
-            print(
-                f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}"
-            )
+            print(f"  {i + 1:>4}  {energy:>16.10f}  {err_mha:>12.4f}  {basis:>8d}")
 
     # --- Final summary ---
     print("\n" + "=" * 60)

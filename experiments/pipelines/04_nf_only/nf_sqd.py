@@ -35,22 +35,43 @@ def get_shots_multiplier(n_unique: int, n_qubits: int) -> int:
 
 def get_training_params(n_configs: int) -> dict:
     if n_configs <= 10:
-        return dict(max_epochs=100, min_epochs=30, samples_per_batch=500,
-                    nf_hidden_dims=[128, 128], nqs_hidden_dims=[128, 128, 128])
+        return dict(
+            max_epochs=100,
+            min_epochs=30,
+            samples_per_batch=500,
+            nf_hidden_dims=[128, 128],
+            nqs_hidden_dims=[128, 128, 128],
+        )
     elif n_configs <= 300:
-        return dict(max_epochs=150, min_epochs=50, samples_per_batch=1000,
-                    nf_hidden_dims=[128, 128], nqs_hidden_dims=[128, 128, 128])
+        return dict(
+            max_epochs=150,
+            min_epochs=50,
+            samples_per_batch=1000,
+            nf_hidden_dims=[128, 128],
+            nqs_hidden_dims=[128, 128, 128],
+        )
     elif n_configs <= 2000:
-        return dict(max_epochs=200, min_epochs=80, samples_per_batch=1500,
-                    nf_hidden_dims=[256, 256], nqs_hidden_dims=[256, 256, 256])
+        return dict(
+            max_epochs=200,
+            min_epochs=80,
+            samples_per_batch=1500,
+            nf_hidden_dims=[256, 256],
+            nqs_hidden_dims=[256, 256, 256],
+        )
     else:
-        return dict(max_epochs=300, min_epochs=100, samples_per_batch=2000,
-                    nf_hidden_dims=[256, 256], nqs_hidden_dims=[256, 256, 256])
+        return dict(
+            max_epochs=300,
+            min_epochs=100,
+            samples_per_batch=2000,
+            nf_hidden_dims=[256, 256],
+            nqs_hidden_dims=[256, 256, 256],
+        )
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(name)s %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s"
+    )
 
     parser = create_base_parser("NF-only + SQD: NF basis -> noise -> S-CORE.")
     parser.add_argument("--sqd-noise-rate", type=float, default=None)
@@ -82,7 +103,9 @@ def main() -> None:
     td = get_training_params(n_configs)
 
     pipe_config = PipelineConfig(
-        skip_nf_training=False, subspace_mode="sqd", sqd_noise_rate=noise_rate,
+        skip_nf_training=False,
+        subspace_mode="sqd",
+        sqd_noise_rate=noise_rate,
         sqd_num_batches=config.get("sqd_num_batches", 5),
         sqd_self_consistent_iters=config.get("sqd_self_consistent_iters", 5),
         teacher_weight=config.get("teacher_weight", 0.5),
@@ -97,8 +120,10 @@ def main() -> None:
     )
 
     pipeline = FlowGuidedKrylovPipeline(
-        hamiltonian=hamiltonian, config=pipe_config,
-        exact_energy=exact_energy, auto_adapt=True,
+        hamiltonian=hamiltonian,
+        config=pipe_config,
+        exact_energy=exact_energy,
+        auto_adapt=True,
     )
 
     t_start = time.perf_counter()
@@ -116,7 +141,9 @@ def main() -> None:
     pipeline.run_subspace_diag(progress=True)
     wall_time = time.perf_counter() - t_start
 
-    final_energy = pipeline.results.get("final_energy", pipeline.results.get("combined_energy"))
+    final_energy = pipeline.results.get(
+        "final_energy", pipeline.results.get("combined_energy")
+    )
     error_mha = (final_energy - exact_energy) * 1000.0 if final_energy else None
 
     print(f"\n{'=' * 60}")

@@ -303,9 +303,7 @@ def main() -> None:
     print("=" * 60)
     print(f"Stage 1 (NF training):  {n_epochs} epochs")
     print(f"Stage 2 (Basis merge):  {n_unique_pre_pt2} unique configs")
-    print(
-        f"Stage 2.5 (PT2):       {n_unique_pre_pt2} -> {n_unique_post_pt2} configs"
-    )
+    print(f"Stage 2.5 (PT2):       {n_unique_pre_pt2} -> {n_unique_post_pt2} configs")
     print(f"  PT2 max_new = {pt2_max_new}, n_ref = {pt2_n_ref}")
     print(f"Noise rate:             {noise_rate}")
     print(f"Total shots:            {total_shots}")

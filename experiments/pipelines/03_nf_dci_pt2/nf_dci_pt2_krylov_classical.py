@@ -174,9 +174,7 @@ def main() -> None:
     nf_hidden_dims = config.get("nf_hidden_dims", train_defaults["nf_hidden_dims"])
     nqs_hidden_dims = config.get("nqs_hidden_dims", train_defaults["nqs_hidden_dims"])
     max_krylov_dim = config.get("max_krylov_dim", skqd_defaults["max_krylov_dim"])
-    shots_per_krylov = config.get(
-        "shots_per_krylov", skqd_defaults["shots_per_krylov"]
-    )
+    shots_per_krylov = config.get("shots_per_krylov", skqd_defaults["shots_per_krylov"])
 
     # --- Build pipeline-config kwargs ---
     pipeline_kwargs: dict = dict(

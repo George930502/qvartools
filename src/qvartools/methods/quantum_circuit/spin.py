@@ -108,9 +108,7 @@ class QuantumSKQDSpinConfig:
         if self.n_spins < 2:
             raise ValueError(f"n_spins must be >= 2, got {self.n_spins}")
         if self.max_krylov_dim < 2:
-            raise ValueError(
-                f"max_krylov_dim must be >= 2, got {self.max_krylov_dim}"
-            )
+            raise ValueError(f"max_krylov_dim must be >= 2, got {self.max_krylov_dim}")
         if self.total_evolution_time <= 0.0:
             raise ValueError(
                 f"total_evolution_time must be > 0, got {self.total_evolution_time}"
@@ -120,9 +118,7 @@ class QuantumSKQDSpinConfig:
                 f"num_trotter_steps must be >= 1, got {self.num_trotter_steps}"
             )
         if self.trotter_order not in (1, 2):
-            raise ValueError(
-                f"trotter_order must be 1 or 2, got {self.trotter_order}"
-            )
+            raise ValueError(f"trotter_order must be 1 or 2, got {self.trotter_order}")
 
     def to_quantum_skqd_config(self) -> QuantumSKQDConfig:
         """Convert to the low-level :class:`QuantumSKQDConfig`."""

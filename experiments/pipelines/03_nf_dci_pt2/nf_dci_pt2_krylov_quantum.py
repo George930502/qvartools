@@ -238,8 +238,10 @@ def main() -> None:
         device=device,
     )
 
-    print(f"\nQuantum Krylov: dim={qskqd_max_krylov}, shots={qskqd_shots}, "
-          f"backend={qskqd_backend}")
+    print(
+        f"\nQuantum Krylov: dim={qskqd_max_krylov}, shots={qskqd_shots}, "
+        f"backend={qskqd_backend}"
+    )
 
     qskqd_result = run_quantum_skqd(
         hamiltonian,

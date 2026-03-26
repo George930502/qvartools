@@ -28,30 +28,125 @@ CHEMICAL_ACCURACY_MHA = 1.6
 # ---- All 24 pipelines, organized by group ----
 PIPELINES = [
     # (group, script_path, short_name, description)
-    ("01_dci", "01_dci/dci_krylov_classical.py", "DCI+Krylov-C", "DCI → Classical Krylov"),
+    (
+        "01_dci",
+        "01_dci/dci_krylov_classical.py",
+        "DCI+Krylov-C",
+        "DCI → Classical Krylov",
+    ),
     ("01_dci", "01_dci/dci_krylov_quantum.py", "DCI+Krylov-Q", "DCI → Quantum Krylov"),
     ("01_dci", "01_dci/dci_sqd.py", "DCI+SQD", "DCI → SQD"),
-    ("02_nf_dci", "02_nf_dci/nf_dci_krylov_classical.py", "NF+DCI+Krylov-C", "NF+DCI → Classical Krylov"),
-    ("02_nf_dci", "02_nf_dci/nf_dci_krylov_quantum.py", "NF+DCI+Krylov-Q", "NF+DCI → Quantum Krylov"),
+    (
+        "02_nf_dci",
+        "02_nf_dci/nf_dci_krylov_classical.py",
+        "NF+DCI+Krylov-C",
+        "NF+DCI → Classical Krylov",
+    ),
+    (
+        "02_nf_dci",
+        "02_nf_dci/nf_dci_krylov_quantum.py",
+        "NF+DCI+Krylov-Q",
+        "NF+DCI → Quantum Krylov",
+    ),
     ("02_nf_dci", "02_nf_dci/nf_dci_sqd.py", "NF+DCI+SQD", "NF+DCI → SQD"),
-    ("03_nf_dci_pt2", "03_nf_dci_pt2/nf_dci_pt2_krylov_classical.py", "NF+DCI+PT2+Krylov-C", "NF+DCI+PT2 → Classical Krylov"),
-    ("03_nf_dci_pt2", "03_nf_dci_pt2/nf_dci_pt2_krylov_quantum.py", "NF+DCI+PT2+Krylov-Q", "NF+DCI+PT2 → Quantum Krylov"),
-    ("03_nf_dci_pt2", "03_nf_dci_pt2/nf_dci_pt2_sqd.py", "NF+DCI+PT2+SQD", "NF+DCI+PT2 → SQD"),
-    ("04_nf_only", "04_nf_only/nf_krylov_classical.py", "NF+Krylov-C", "NF-only → Classical Krylov"),
-    ("04_nf_only", "04_nf_only/nf_krylov_quantum.py", "NF+Krylov-Q", "NF-only → Quantum Krylov"),
+    (
+        "03_nf_dci_pt2",
+        "03_nf_dci_pt2/nf_dci_pt2_krylov_classical.py",
+        "NF+DCI+PT2+Krylov-C",
+        "NF+DCI+PT2 → Classical Krylov",
+    ),
+    (
+        "03_nf_dci_pt2",
+        "03_nf_dci_pt2/nf_dci_pt2_krylov_quantum.py",
+        "NF+DCI+PT2+Krylov-Q",
+        "NF+DCI+PT2 → Quantum Krylov",
+    ),
+    (
+        "03_nf_dci_pt2",
+        "03_nf_dci_pt2/nf_dci_pt2_sqd.py",
+        "NF+DCI+PT2+SQD",
+        "NF+DCI+PT2 → SQD",
+    ),
+    (
+        "04_nf_only",
+        "04_nf_only/nf_krylov_classical.py",
+        "NF+Krylov-C",
+        "NF-only → Classical Krylov",
+    ),
+    (
+        "04_nf_only",
+        "04_nf_only/nf_krylov_quantum.py",
+        "NF+Krylov-Q",
+        "NF-only → Quantum Krylov",
+    ),
     ("04_nf_only", "04_nf_only/nf_sqd.py", "NF+SQD", "NF-only → SQD"),
-    ("05_hf_only", "05_hf_only/hf_krylov_classical.py", "HF+Krylov-C", "HF-only → Classical Krylov"),
-    ("05_hf_only", "05_hf_only/hf_krylov_quantum.py", "HF+Krylov-Q", "HF-only → Quantum Krylov"),
+    (
+        "05_hf_only",
+        "05_hf_only/hf_krylov_classical.py",
+        "HF+Krylov-C",
+        "HF-only → Classical Krylov",
+    ),
+    (
+        "05_hf_only",
+        "05_hf_only/hf_krylov_quantum.py",
+        "HF+Krylov-Q",
+        "HF-only → Quantum Krylov",
+    ),
     ("05_hf_only", "05_hf_only/hf_sqd.py", "HF+SQD", "HF-only → SQD"),
-    ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_krylov_classical.py", "Iter+Krylov-C", "Iterative NQS → Classical Krylov"),
-    ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_krylov_quantum.py", "Iter+Krylov-Q", "Iterative NQS → Quantum Krylov"),
-    ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_sqd.py", "Iter+SQD", "Iterative NQS → SQD"),
-    ("07_iterative_nqs_dci", "07_iterative_nqs_dci/iter_nqs_dci_krylov_classical.py", "Iter+DCI+Krylov-C", "Iterative NQS+DCI → Classical Krylov"),
-    ("07_iterative_nqs_dci", "07_iterative_nqs_dci/iter_nqs_dci_krylov_quantum.py", "Iter+DCI+Krylov-Q", "Iterative NQS+DCI → Quantum Krylov"),
-    ("07_iterative_nqs_dci", "07_iterative_nqs_dci/iter_nqs_dci_sqd.py", "Iter+DCI+SQD", "Iterative NQS+DCI → SQD"),
-    ("08_iterative_nqs_dci_pt2", "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_classical.py", "Iter+DCI+PT2+Krylov-C", "Iterative NQS+DCI+PT2 → Classical Krylov"),
-    ("08_iterative_nqs_dci_pt2", "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_quantum.py", "Iter+DCI+PT2+Krylov-Q", "Iterative NQS+DCI+PT2 → Quantum Krylov"),
-    ("08_iterative_nqs_dci_pt2", "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_sqd.py", "Iter+DCI+PT2+SQD", "Iterative NQS+DCI+PT2 → SQD"),
+    (
+        "06_iterative_nqs",
+        "06_iterative_nqs/iter_nqs_krylov_classical.py",
+        "Iter+Krylov-C",
+        "Iterative NQS → Classical Krylov",
+    ),
+    (
+        "06_iterative_nqs",
+        "06_iterative_nqs/iter_nqs_krylov_quantum.py",
+        "Iter+Krylov-Q",
+        "Iterative NQS → Quantum Krylov",
+    ),
+    (
+        "06_iterative_nqs",
+        "06_iterative_nqs/iter_nqs_sqd.py",
+        "Iter+SQD",
+        "Iterative NQS → SQD",
+    ),
+    (
+        "07_iterative_nqs_dci",
+        "07_iterative_nqs_dci/iter_nqs_dci_krylov_classical.py",
+        "Iter+DCI+Krylov-C",
+        "Iterative NQS+DCI → Classical Krylov",
+    ),
+    (
+        "07_iterative_nqs_dci",
+        "07_iterative_nqs_dci/iter_nqs_dci_krylov_quantum.py",
+        "Iter+DCI+Krylov-Q",
+        "Iterative NQS+DCI → Quantum Krylov",
+    ),
+    (
+        "07_iterative_nqs_dci",
+        "07_iterative_nqs_dci/iter_nqs_dci_sqd.py",
+        "Iter+DCI+SQD",
+        "Iterative NQS+DCI → SQD",
+    ),
+    (
+        "08_iterative_nqs_dci_pt2",
+        "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_classical.py",
+        "Iter+DCI+PT2+Krylov-C",
+        "Iterative NQS+DCI+PT2 → Classical Krylov",
+    ),
+    (
+        "08_iterative_nqs_dci_pt2",
+        "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_quantum.py",
+        "Iter+DCI+PT2+Krylov-Q",
+        "Iterative NQS+DCI+PT2 → Quantum Krylov",
+    ),
+    (
+        "08_iterative_nqs_dci_pt2",
+        "08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_sqd.py",
+        "Iter+DCI+PT2+SQD",
+        "Iterative NQS+DCI+PT2 → SQD",
+    ),
 ]
 
 
@@ -70,9 +165,11 @@ def run_pipeline_subprocess(
         return {"status": "MISSING", "error": f"Script not found: {full_path}"}
 
     cmd = [
-        sys.executable, str(full_path),
+        sys.executable,
+        str(full_path),
         molecule,
-        "--device", device,
+        "--device",
+        device,
     ]
 
     try:
@@ -153,27 +250,35 @@ def main() -> None:
         description="Run all 24 SKQD/SQD pipelines and compare."
     )
     parser.add_argument(
-        "molecule", nargs="?", default="h2",
+        "molecule",
+        nargs="?",
+        default="h2",
         help="Molecule identifier (default: h2)",
     )
     parser.add_argument(
-        "--device", default="auto",
+        "--device",
+        default="auto",
         help="Torch device (default: auto)",
     )
     parser.add_argument(
-        "--only", nargs="*", default=None,
+        "--only",
+        nargs="*",
+        default=None,
         help="Run only these groups (e.g., --only 01 02 04)",
     )
     parser.add_argument(
-        "--skip-quantum", action="store_true",
+        "--skip-quantum",
+        action="store_true",
         help="Skip quantum Krylov pipelines (no CUDA-Q needed)",
     )
     parser.add_argument(
-        "--skip-iterative", action="store_true",
+        "--skip-iterative",
+        action="store_true",
         help="Skip iterative NQS pipelines (slower)",
     )
     parser.add_argument(
-        "--output", default=None,
+        "--output",
+        default=None,
         help="Save results to JSON file",
     )
     args = parser.parse_args()
@@ -205,9 +310,12 @@ def main() -> None:
             continue
         if args.skip_quantum and "Krylov-Q" in name:
             continue
-        if args.skip_iterative and group.startswith("06") or (
-            args.skip_iterative and group.startswith("07")
-        ) or (args.skip_iterative and group.startswith("08")):
+        if (
+            args.skip_iterative
+            and group.startswith("06")
+            or (args.skip_iterative and group.startswith("07"))
+            or (args.skip_iterative and group.startswith("08"))
+        ):
             continue
 
         pipelines_to_run.append((group, script, name, desc))
@@ -232,7 +340,13 @@ def main() -> None:
         if energy is not None and error_mha is None:
             error_mha = (energy - exact_energy) * 1000.0
 
-        status_icon = {"OK": "+", "FAILED": "X", "MISSING": "?", "TIMEOUT": "T", "ERROR": "!"}
+        status_icon = {
+            "OK": "+",
+            "FAILED": "X",
+            "MISSING": "?",
+            "TIMEOUT": "T",
+            "ERROR": "!",
+        }
         icon = status_icon.get(status, "?")
 
         if energy is not None:
@@ -242,17 +356,19 @@ def main() -> None:
         else:
             print(f"  [{icon}] {status}: {result.get('error', 'unknown')[:100]}")
 
-        results.append({
-            "group": group,
-            "name": name,
-            "description": desc,
-            "script": script,
-            "status": status,
-            "energy": energy,
-            "error_mha": error_mha,
-            "wall_time": wall_time,
-            "exact_energy": exact_energy,
-        })
+        results.append(
+            {
+                "group": group,
+                "name": name,
+                "description": desc,
+                "script": script,
+                "status": status,
+                "energy": energy,
+                "error_mha": error_mha,
+                "wall_time": wall_time,
+                "exact_energy": exact_energy,
+            }
+        )
         print()
 
     # Print summary table
@@ -261,7 +377,9 @@ def main() -> None:
     print(f"  Exact (FCI) energy: {exact_energy:.10f} Ha")
     print(f"  Chemical accuracy threshold: {CHEMICAL_ACCURACY_MHA} mHa")
     print(f"{'=' * 100}")
-    print(f"  {'#':>2}  {'Pipeline':<30}  {'Status':>7}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Chem.Acc':>8}  {'Time (s)':>9}")
+    print(
+        f"  {'#':>2}  {'Pipeline':<30}  {'Status':>7}  {'Energy (Ha)':>16}  {'Error (mHa)':>12}  {'Chem.Acc':>8}  {'Time (s)':>9}"
+    )
     print(f"  {'─' * 94}")
 
     for i, r in enumerate(results):
@@ -286,11 +404,15 @@ def main() -> None:
     if ok_results:
         best = min(ok_results, key=lambda r: r["energy"])
         fastest = min(ok_results, key=lambda r: r["wall_time"] or float("inf"))
-        n_chem_acc = sum(1 for r in ok_results if abs(r["error_mha"] or 999) < CHEMICAL_ACCURACY_MHA)
+        n_chem_acc = sum(
+            1 for r in ok_results if abs(r["error_mha"] or 999) < CHEMICAL_ACCURACY_MHA
+        )
 
         print(f"\n  Completed: {len(ok_results)}/{len(results)}")
         print(f"  Chemical accuracy: {n_chem_acc}/{len(ok_results)}")
-        print(f"  Best energy: {best['name']} ({best['energy']:.10f} Ha, {best['error_mha']:.4f} mHa)")
+        print(
+            f"  Best energy: {best['name']} ({best['energy']:.10f} Ha, {best['error_mha']:.4f} mHa)"
+        )
         print(f"  Fastest: {fastest['name']} ({fastest['wall_time']:.1f}s)")
 
     failed = [r for r in results if r["status"] != "OK"]
@@ -303,12 +425,17 @@ def main() -> None:
     if args.output:
         output_path = Path(args.output)
         with output_path.open("w") as f:
-            json.dump({
-                "molecule": molecule,
-                "exact_energy": exact_energy,
-                "device": device,
-                "results": results,
-            }, f, indent=2, default=str)
+            json.dump(
+                {
+                    "molecule": molecule,
+                    "exact_energy": exact_energy,
+                    "device": device,
+                    "results": results,
+                },
+                f,
+                indent=2,
+                default=str,
+            )
         print(f"\n  Results saved to: {output_path}")
 
 

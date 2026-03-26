@@ -264,9 +264,9 @@ def run_hi_nqs_sqd(
 
         # Deduplicate against cumulative basis (cpu for numpy compat)
         if cumulative_basis.shape[0] > 0:
-            unique_new = vectorized_dedup(
-                cumulative_basis.cpu(), new_configs.cpu()
-            ).to(device)
+            unique_new = vectorized_dedup(cumulative_basis.cpu(), new_configs.cpu()).to(
+                device
+            )
         else:
             unique_new = torch.unique(new_configs, dim=0)
 
