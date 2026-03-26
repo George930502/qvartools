@@ -309,6 +309,33 @@ def _solve_gpu(
     except ImportError:
         return None
 
+    is_sparse = scipy.sparse.issparse(H) or scipy.sparse.issparse(S)
+
+    if is_sparse:
+        # Use CuPy sparse eigsh to avoid densifying large matrices
+        try:
+            import cupyx.scipy.sparse as cusp_sparse  # type: ignore[import-untyped]
+            import cupyx.scipy.sparse.linalg as cusp_linalg  # type: ignore[import-untyped]
+
+            H_sp = scipy.sparse.csr_matrix(H) if not scipy.sparse.issparse(H) else H
+            S_sp = scipy.sparse.csr_matrix(S) if not scipy.sparse.issparse(S) else S
+
+            H_gpu = cusp_sparse.csr_matrix(H_sp)
+            S_gpu = cusp_sparse.csr_matrix(S_sp)
+
+            eigenvalues_gpu, eigenvectors_gpu = cusp_linalg.eigsh(
+                H_gpu, k=k, M=S_gpu, which="SA"
+            )
+            eigenvalues = cp.asnumpy(eigenvalues_gpu)
+            eigenvectors = cp.asnumpy(eigenvectors_gpu)
+
+            order = np.argsort(eigenvalues)
+            logger.debug("GPU sparse eigsh: k=%d", k)
+            return eigenvalues[order], eigenvectors[:, order]
+        except Exception as exc:
+            logger.warning("CuPy sparse eigsh failed (%s), trying dense GPU.", exc)
+
+    # Dense GPU path
     H_dense = H.toarray() if scipy.sparse.issparse(H) else np.asarray(H)
     S_dense = S.toarray() if scipy.sparse.issparse(S) else np.asarray(S)
 

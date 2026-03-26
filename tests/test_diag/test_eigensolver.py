@@ -164,3 +164,35 @@ class TestAdaptiveDispatch:
         vals, _ = solve_generalized_eigenvalue(H, S, k=2, davidson_threshold=500)
         numpy_vals = np.sort(np.linalg.eigvalsh(H))
         np.testing.assert_allclose(vals, numpy_vals[:2], atol=1e-8)
+
+
+class TestSolveGPUSparseAware:
+    """Tests for _solve_gpu sparse-awareness."""
+
+    def test_sparse_input_does_not_crash(self) -> None:
+        """_solve_gpu should handle sparse input without crashing."""
+        import scipy.sparse as sp
+
+        import qvartools.diag.eigen.eigenvalue as eig_mod
+
+        H_sparse = sp.diags([1.0, 2.0, 3.0, 4.0], format="csr")
+        S_sparse = sp.eye(4, format="csr")
+        # Either None (no CuPy) or valid result — should NOT raise
+        result = eig_mod._solve_gpu(H_sparse, S_sparse, k=1)
+
+    def test_sparse_gpu_fallback_to_cpu_sparse(self) -> None:
+        """When use_gpu=True but CuPy unavailable, sparse input should
+        still use _solve_sparse (not _solve_dense)."""
+        import scipy.sparse as sp
+
+        H_sparse = sp.diags([1.0, 2.0, 3.0, 4.0], format="csr")
+        S_sparse = sp.eye(4, format="csr")
+        vals, _ = solve_generalized_eigenvalue(H_sparse, S_sparse, k=2, use_gpu=True)
+        np.testing.assert_allclose(vals, [1.0, 2.0], atol=1e-8)
+
+    def test_dense_gpu_fallback_still_correct(self) -> None:
+        """Dense input with use_gpu should still produce correct results."""
+        H = np.diag([5.0, 3.0, 1.0])
+        S = np.eye(3)
+        vals, _ = solve_generalized_eigenvalue(H, S, k=2, use_gpu=True)
+        np.testing.assert_allclose(vals, [1.0, 3.0], atol=1e-8)
