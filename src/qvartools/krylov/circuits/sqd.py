@@ -783,7 +783,6 @@ class SQDSolver:
                 )
 
         # Compute variance on GPU: <H^2> - <H>^2
-        ground_state = ground_state.to(H_work.device)
         Hv = H_work @ ground_state
         H2_expectation = float(torch.dot(ground_state, H_work @ Hv).cpu())
         variance = H2_expectation - E0**2
@@ -884,11 +883,10 @@ class SQDSolver:
             configs = result["batch"]
 
             if isinstance(coeffs, np.ndarray):
-                coeffs = torch.from_numpy(coeffs)
+                coeffs = torch.from_numpy(coeffs.copy())
 
-            # Ensure both on same device
-            target_device = coeffs.device
-            configs = configs.to(target_device)
+            # Move coeffs to configs' device (not the reverse — keep GPU when available)
+            coeffs = coeffs.to(configs.device)
 
             probs = (coeffs * coeffs).double()
             occ_k = probs @ configs.double()
