@@ -44,24 +44,57 @@ def main() -> None:
     )
 
     parser = create_base_parser("Pure SKQD: Direct-CI (HF+S+D) -> Krylov.")
-    parser.add_argument("--max-krylov-dim", type=int, default=None,
-                        help="Maximum Krylov subspace dimension.")
-    parser.add_argument("--shots-per-krylov", type=int, default=None,
-                        help="Shots per Krylov expansion step.")
-    parser.add_argument("--max-accumulated-basis", type=int, default=None,
-                        help="Max accumulated basis size.")
-    parser.add_argument("--use-diversity-selection", type=bool, default=None,
-                        help="Enable diversity-based selection.")
-    parser.add_argument("--max-diverse-configs", type=int, default=None,
-                        help="Max diverse configurations to select.")
-    parser.add_argument("--use-residual-expansion", type=bool, default=None,
-                        help="Enable residual-guided expansion.")
-    parser.add_argument("--residual-iterations", type=int, default=None,
-                        help="Number of residual expansion iterations.")
-    parser.add_argument("--residual-configs-per-iter", type=int, default=None,
-                        help="Configs added per residual iteration.")
-    parser.add_argument("--verbose", action="store_true", default=None,
-                        help="Enable verbose logging.")
+    parser.add_argument(
+        "--max-krylov-dim",
+        type=int,
+        default=None,
+        help="Maximum Krylov subspace dimension.",
+    )
+    parser.add_argument(
+        "--shots-per-krylov",
+        type=int,
+        default=None,
+        help="Shots per Krylov expansion step.",
+    )
+    parser.add_argument(
+        "--max-accumulated-basis",
+        type=int,
+        default=None,
+        help="Max accumulated basis size.",
+    )
+    parser.add_argument(
+        "--use-diversity-selection",
+        type=bool,
+        default=None,
+        help="Enable diversity-based selection.",
+    )
+    parser.add_argument(
+        "--max-diverse-configs",
+        type=int,
+        default=None,
+        help="Max diverse configurations to select.",
+    )
+    parser.add_argument(
+        "--use-residual-expansion",
+        type=bool,
+        default=None,
+        help="Enable residual-guided expansion.",
+    )
+    parser.add_argument(
+        "--residual-iterations",
+        type=int,
+        default=None,
+        help="Number of residual expansion iterations.",
+    )
+    parser.add_argument(
+        "--residual-configs-per-iter",
+        type=int,
+        default=None,
+        help="Configs added per residual iteration.",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", default=None, help="Enable verbose logging."
+    )
     args, config = load_config(parser)
 
     device = config.get("device", "auto")
@@ -100,9 +133,14 @@ def main() -> None:
     }
 
     # Optional SKQD parameters from config
-    for key in ("max_accumulated_basis", "use_diversity_selection",
-                "max_diverse_configs", "use_residual_expansion",
-                "residual_iterations", "residual_configs_per_iter"):
+    for key in (
+        "max_accumulated_basis",
+        "use_diversity_selection",
+        "max_diverse_configs",
+        "use_residual_expansion",
+        "residual_iterations",
+        "residual_configs_per_iter",
+    ):
         value = config.get(key)
         if value is not None:
             skqd_p[key] = value
@@ -149,8 +187,9 @@ def main() -> None:
             label = "CI-only" if i == 0 else f"k={i - 1}"
             print(f"    {label:>8}: {e:.10f} Ha")
 
-    final_energy = pipeline.results.get("final_energy",
-                                        pipeline.results.get("combined_energy"))
+    final_energy = pipeline.results.get(
+        "final_energy", pipeline.results.get("combined_energy")
+    )
     error_mha = pipeline.results.get("error_mha")
     if error_mha is None and final_energy is not None:
         error_mha = (final_energy - exact_energy) * 1000.0

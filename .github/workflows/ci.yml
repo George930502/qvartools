@@ -22,6 +22,7 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,8 +30,8 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install -e ".[dev]" && pip install mypy
-      - name: Run mypy on core modules
-        run: mypy src/qvartools/pipeline.py src/qvartools/pipeline_config.py src/qvartools/nqs/ --ignore-missing-imports --no-error-summary || true
+      - name: Run mypy on core modules (informational)
+        run: mypy src/qvartools/pipeline.py src/qvartools/pipeline_config.py src/qvartools/nqs/ --ignore-missing-imports --no-error-summary
 
   test:
     runs-on: ubuntu-latest
@@ -45,8 +46,11 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev,pyscf]"
       - name: Run tests with coverage
-        run: pytest --cov=qvartools --cov-report=term-missing --cov-report=xml -m "not gpu" --tb=short -q
-      - name: Check coverage threshold
-        if: matrix.python-version == '3.11'
-        run: |
-          coverage report --fail-under=40
+        run: >
+          pytest
+          --cov=qvartools
+          --cov-report=term-missing
+          --cov-report=xml
+          ${{ matrix.python-version == '3.11' && '--cov-fail-under=40' || '' }}
+          -m "not gpu"
+          --tb=short -q

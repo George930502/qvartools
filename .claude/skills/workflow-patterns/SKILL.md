@@ -79,7 +79,7 @@ With green tests, improve the code:
 
 ### Step 6: Verify Coverage
 
-Check test coverage meets the 80% target:
+Check test coverage meets the project target (CI enforces 40% as an incremental baseline; aim for 80% long-term):
 
 ```bash
 pytest --cov=module --cov-report=term-missing

@@ -187,8 +187,4 @@ def _get_explicit_cli_args(parser: argparse.ArgumentParser) -> set[str]:
 
     probe_ns, _ = probe.parse_known_args()
 
-    return {
-        key
-        for key, value in vars(probe_ns).items()
-        if value is not sentinel
-    }
+    return {key for key, value in vars(probe_ns).items() if value is not sentinel}
