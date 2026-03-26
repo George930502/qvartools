@@ -210,7 +210,15 @@ def _solve_davidson(
     )
 
     # Check if S is identity (standard eigenvalue problem)
-    is_identity = np.allclose(S_dense, np.eye(S_dense.shape[0]), atol=1e-12)
+    # Avoid allocating a full n×n identity matrix for the comparison
+    n = S_dense.shape[0]
+    diag_ok = np.allclose(np.diag(S_dense), 1.0, atol=1e-12)
+    if diag_ok:
+        # Check off-diagonal: sum of abs values minus trace
+        off_diag_norm = np.abs(S_dense).sum() - np.abs(np.diag(S_dense)).sum()
+        is_identity = off_diag_norm < n * 1e-12
+    else:
+        is_identity = False
 
     if is_identity:
         H_work = H_dense
@@ -331,7 +339,7 @@ def _solve_gpu(
 
             order = np.argsort(eigenvalues)
             logger.debug("GPU sparse eigsh: k=%d", k)
-            return eigenvalues[order], eigenvectors[:, order]
+            return eigenvalues[order[:k]], eigenvectors[:, order[:k]]
         except Exception as exc:
             logger.warning("CuPy sparse eigsh failed (%s), trying dense GPU.", exc)
 

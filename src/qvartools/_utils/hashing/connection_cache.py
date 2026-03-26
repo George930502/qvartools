@@ -69,21 +69,28 @@ class ConnectionCache:
         self._misses: int = 0
         self._powers: torch.Tensor | None = None
         self._powers_n: int = 0
+        self._powers_device: torch.device = torch.device("cpu")
 
     def _get_powers(self, n: int, device: torch.device) -> torch.Tensor:
         """Return the cached powers-of-2 tensor for *n* sites.
 
         The tensor is created once and reused.  If *n* or *device* change,
-        the tensor is rebuilt.
+        the tensor is rebuilt (or moved) accordingly.
         """
         if self._powers is not None and self._powers_n == n:
-            return self._powers.to(device)
+            if self._powers.device == device:
+                return self._powers
+            self._powers = self._powers.to(device)
+            self._powers_device = device
+            return self._powers
         self._powers = torch.tensor(
             [1 << k for k in range(n - 1, -1, -1)],
             dtype=torch.int64,
+            device=device,
         )
         self._powers_n = n
-        return self._powers.to(device)
+        self._powers_device = device
+        return self._powers
 
     def _hash(self, config: torch.Tensor) -> int:
         """Convert a binary configuration to an integer hash."""
@@ -105,7 +112,7 @@ class ConnectionCache:
         """
         n_sites = configs.shape[1]
         powers = self._get_powers(n_sites, configs.device)
-        return (configs.to(torch.int64) * powers.unsqueeze(0)).sum(dim=1)
+        return configs.to(torch.int64) @ powers
 
     def get_batch(
         self, configs: torch.Tensor
