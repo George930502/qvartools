@@ -41,7 +41,9 @@ def cleanup_gpu_memory() -> None:
     Safe to call without CUDA — behaves as a no-op on CPU-only systems.
     """
     gc.collect()
-    if torch.cuda.is_available():
+    # Only touch CUDA if it was already initialized — avoids triggering
+    # lazy CUDA initialization on CPU-only runs.
+    if torch.cuda.is_initialized():
         before = torch.cuda.memory_reserved()
         torch.cuda.empty_cache()
         torch.cuda.synchronize()

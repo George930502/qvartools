@@ -26,9 +26,9 @@ class TestCleanupGpuMemory:
         """Should run without error after creating and deleting tensors."""
         from qvartools._utils.gpu import cleanup_gpu_memory
 
-        # Create and discard some tensors
+        # Create tensors without keeping references
         for _ in range(10):
-            _ = torch.randn(100, 100)
+            torch.randn(100, 100)
         cleanup_gpu_memory()
 
     def test_cuda_cache_freed(self) -> None:
