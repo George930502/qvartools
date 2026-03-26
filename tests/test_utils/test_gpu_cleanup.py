@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 
 
@@ -35,9 +36,7 @@ class TestCleanupGpuMemory:
         from qvartools._utils.gpu import cleanup_gpu_memory
 
         if not torch.cuda.is_available():
-            # On CPU-only, just verify it runs
-            cleanup_gpu_memory()
-            return
+            pytest.skip("CUDA not available")
 
         # Allocate GPU memory
         x = torch.randn(1000, 1000, device="cuda")
