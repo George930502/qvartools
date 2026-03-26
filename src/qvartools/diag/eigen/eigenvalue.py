@@ -125,7 +125,7 @@ def solve_generalized_eigenvalue(
     n = H.shape[0]
 
     if use_gpu:
-        result = _solve_gpu(H, S, k)
+        result = _solve_gpu(H, S, k, which)
         if result is not None:
             return result
         logger.info("CuPy unavailable; falling back to CPU eigensolver.")
@@ -135,8 +135,8 @@ def solve_generalized_eigenvalue(
     if is_sparse and k < n - 1:
         return _solve_sparse(H, S, k, which)
 
-    # For large dense matrices, use Davidson (much faster than full eigh)
-    if n > davidson_threshold and k < n:
+    # Davidson only supports smallest algebraic eigenvalues
+    if n > davidson_threshold and k < n and which == "SA":
         return _solve_davidson(H, S, k)
 
     return _solve_dense(H, S, k)
@@ -294,6 +294,7 @@ def _solve_gpu(
     H: _MatrixLike,
     S: _MatrixLike,
     k: int,
+    which: str = "SA",
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """Attempt GPU solve via CuPy.
 
@@ -305,6 +306,8 @@ def _solve_gpu(
         Overlap matrix.
     k : int
         Number of eigenvalues.
+    which : str, optional
+        Eigenvalue selection criterion (default ``"SA"``).
 
     Returns
     -------
@@ -332,7 +335,7 @@ def _solve_gpu(
             S_gpu = cusp_sparse.csr_matrix(S_sp)
 
             eigenvalues_gpu, eigenvectors_gpu = cusp_linalg.eigsh(
-                H_gpu, k=k, M=S_gpu, which="SA"
+                H_gpu, k=k, M=S_gpu, which=which
             )
             eigenvalues = cp.asnumpy(eigenvalues_gpu)
             eigenvectors = cp.asnumpy(eigenvectors_gpu)
@@ -341,9 +344,13 @@ def _solve_gpu(
             logger.debug("GPU sparse eigsh: k=%d", k)
             return eigenvalues[order[:k]], eigenvectors[:, order[:k]]
         except Exception as exc:
-            logger.warning("CuPy sparse eigsh failed (%s), trying dense GPU.", exc)
+            logger.warning(
+                "CuPy sparse eigsh failed (%s); falling back to CPU sparse.",
+                exc,
+            )
+            return None
 
-    # Dense GPU path
+    # Dense GPU path (only reached for dense inputs)
     H_dense = H.toarray() if scipy.sparse.issparse(H) else np.asarray(H)
     S_dense = S.toarray() if scipy.sparse.issparse(S) else np.asarray(S)
 

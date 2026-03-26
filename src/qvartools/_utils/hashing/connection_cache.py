@@ -92,9 +92,25 @@ class ConnectionCache:
         self._powers_device = device
         return self._powers
 
+    _MAX_SITES_INT64 = 63  # int64 can represent 2^0 .. 2^62 without overflow
+
     def _hash(self, config: torch.Tensor) -> int:
-        """Convert a binary configuration to an integer hash."""
-        powers = self._get_powers(config.shape[0], config.device)
+        """Convert a binary configuration to an integer hash.
+
+        Raises
+        ------
+        ValueError
+            If ``n_sites`` exceeds 63 (int64 overflow).  For larger
+            systems use :func:`config_integer_hash` which splits into
+            ``(hi, lo)`` tuples.
+        """
+        n = config.shape[0]
+        if n > self._MAX_SITES_INT64:
+            raise ValueError(
+                f"ConnectionCache supports at most {self._MAX_SITES_INT64} sites "
+                f"(got {n}). Use config_integer_hash for larger systems."
+            )
+        powers = self._get_powers(n, config.device)
         return int((config.to(torch.int64) * powers).sum().item())
 
     def hash_batch(self, configs: torch.Tensor) -> torch.Tensor:
@@ -154,21 +170,34 @@ class ConnectionCache:
         oldest_key = next(iter(self._cache))
         del self._cache[oldest_key]
 
-    def get(self, config: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor] | None:
+    def get(
+        self,
+        config: torch.Tensor,
+        hamiltonian: Hamiltonian | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor] | None:
         """Look up cached connections for a configuration.
 
         On a cache hit the entry is promoted to most-recently-used.
+
+        If *hamiltonian* is provided the call behaves like
+        :meth:`get_or_compute` for backward compatibility: a cache miss
+        triggers ``hamiltonian.get_connections(config)``, caches the
+        result, and returns it (never returns ``None``).
 
         Parameters
         ----------
         config : torch.Tensor
             Binary configuration vector, shape ``(n_sites,)``.
+        hamiltonian : Hamiltonian or None, optional
+            If given, compute and cache on miss instead of returning
+            ``None``.
 
         Returns
         -------
         tuple of (torch.Tensor, torch.Tensor) or None
-            ``(connected_configs, matrix_elements)`` if found, otherwise
-            ``None``.
+            ``(connected_configs, matrix_elements)`` if found (or
+            computed), otherwise ``None`` when *hamiltonian* is not
+            provided.
         """
         key = self._hash(config)
         if key in self._cache:
@@ -176,6 +205,12 @@ class ConnectionCache:
             self._touch(key)
             return self._cache[key]
         self._misses += 1
+
+        if hamiltonian is not None:
+            connected, elements = hamiltonian.get_connections(config)
+            self.put(config, connected, elements)
+            return connected, elements
+
         return None
 
     def put(
