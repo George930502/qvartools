@@ -1,6 +1,6 @@
 # Experiments Guide
 
-This guide covers the experiment pipeline scripts in `experiments/methods/`. Each script implements a single method variant for molecular ground-state energy estimation and can be configured via YAML files with CLI overrides.
+This guide covers the 24 experiment pipeline scripts in `experiments/pipelines/`. Each pipeline combines a basis generation strategy with a diagonalization method. All pipelines can be configured via YAML files with CLI overrides.
 
 ---
 
@@ -9,7 +9,7 @@ This guide covers the experiment pipeline scripts in `experiments/methods/`. Eac
 All pipelines follow the same pattern:
 1. Load a molecule from the registry
 2. Compute the exact FCI energy for reference
-3. Run the method-specific pipeline
+3. Run the method-specific pipeline stages
 4. Report energy, error vs exact, and timing
 
 ### Common Arguments
@@ -22,98 +22,107 @@ All scripts accept:
 
 ---
 
-## 1. `flow_ci_krylov.py` -- NF + Direct-CI -> Krylov Expansion
+## Pipeline Groups
 
-Trains a normalizing flow, merges NF-sampled basis with Direct-CI (HF + singles + doubles), then runs SKQD Krylov subspace diagonalization.
+### Group 01: Direct-CI (no NF training)
 
-```bash
-python experiments/methods/flow_ci_krylov.py h2
-python experiments/methods/flow_ci_krylov.py lih --config experiments/configs/flow_ci_krylov.yaml
-```
+Generates HF + singles + doubles deterministically, then diagonalizes.
 
-## 2. `flow_ci_sqd.py` -- NF + Direct-CI -> SQD
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `01_dci/dci_krylov_classical.py` | Classical Krylov | DCI -> SKQD time evolution |
+| `01_dci/dci_krylov_quantum.py` | Quantum Krylov | DCI -> Trotterized circuit evolution |
+| `01_dci/dci_sqd.py` | SQD | DCI -> noise + S-CORE batch diag |
 
-Same NF training and basis merge as above, but uses SQD (noise injection + S-CORE batch diagonalization) instead of Krylov.
+### Group 02: NF-NQS + DCI Merge
 
-```bash
-python experiments/methods/flow_ci_sqd.py h2
-python experiments/methods/flow_ci_sqd.py --config experiments/configs/flow_ci_sqd.yaml
-```
+Trains a normalizing flow, merges NF-sampled basis with Direct-CI essentials.
 
-## 3. `direct_ci_krylov.py` -- Direct-CI -> Krylov
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `02_nf_dci/nf_dci_krylov_classical.py` | Classical Krylov | NF+DCI merge -> SKQD |
+| `02_nf_dci/nf_dci_krylov_quantum.py` | Quantum Krylov | NF+DCI merge -> Trotterized |
+| `02_nf_dci/nf_dci_sqd.py` | SQD | NF+DCI merge -> noise + S-CORE |
 
-Skips NF training entirely. Generates HF + singles + doubles deterministically, then applies SKQD Krylov expansion.
+### Group 03: NF + DCI + PT2 Expansion
 
-```bash
-python experiments/methods/direct_ci_krylov.py h2
-python experiments/methods/direct_ci_krylov.py --config experiments/configs/direct_ci_krylov.yaml
-```
+Same as Group 02, plus CIPSI-style perturbative basis expansion via Hamiltonian connections.
 
-## 4. `direct_ci_sqd.py` -- Direct-CI -> SQD
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `03_nf_dci_pt2/nf_dci_pt2_krylov_classical.py` | Classical Krylov | NF+DCI+PT2 -> SKQD |
+| `03_nf_dci_pt2/nf_dci_pt2_krylov_quantum.py` | Quantum Krylov | NF+DCI+PT2 -> Trotterized |
+| `03_nf_dci_pt2/nf_dci_pt2_sqd.py` | SQD | NF+DCI+PT2 -> noise + S-CORE |
 
-Direct-CI basis with SQD noise injection and S-CORE. No NF training.
+### Group 04: NF-Only (Ablation)
 
-```bash
-python experiments/methods/direct_ci_sqd.py h2
-python experiments/methods/direct_ci_sqd.py --config experiments/configs/direct_ci_sqd.yaml
-```
+NF training without DCI scaffolding. Tests pure NF generative power.
 
-## 5. `iterative_nqs_krylov.py` -- Iterative NQS + Krylov
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `04_nf_only/nf_krylov_classical.py` | Classical Krylov | NF-only -> SKQD |
+| `04_nf_only/nf_krylov_quantum.py` | Quantum Krylov | NF-only -> Trotterized |
+| `04_nf_only/nf_sqd.py` | SQD | NF-only -> noise + S-CORE |
 
-Iteratively trains an autoregressive transformer NQS, samples configurations, expands the basis via Hamiltonian connections (Krylov-style), diagonalises in the enlarged subspace, and feeds the eigenvector back as a teacher signal. Repeats until convergence.
+### Group 05: HF-Only (Baseline)
 
-```bash
-python experiments/methods/iterative_nqs_krylov.py h2
-python experiments/methods/iterative_nqs_krylov.py lih --max-iterations 20 --n-samples 3000
-```
+Minimal baseline starting from a single Hartree-Fock reference state.
 
-## 6. `iterative_nqs_sqd.py` -- Iterative NQS + SQD
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `05_hf_only/hf_krylov_classical.py` | Classical Krylov | HF -> Krylov discovers configs |
+| `05_hf_only/hf_krylov_quantum.py` | Quantum Krylov | HF -> Trotterized circuit |
+| `05_hf_only/hf_sqd.py` | SQD | HF -> noise + S-CORE |
 
-Same iterative NQS loop as above, but diagonalises directly in the sampled subspace (no Krylov expansion).
+### Group 06: Iterative NQS
 
-```bash
-python experiments/methods/iterative_nqs_sqd.py h2
-python experiments/methods/iterative_nqs_sqd.py --config experiments/configs/iterative_nqs_sqd.yaml
-```
+Iterative autoregressive transformer NQS with eigenvector feedback.
 
-## 7. `flow_only_krylov.py` -- NF-Only -> Krylov (Ablation)
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `06_iterative_nqs/iter_nqs_krylov_classical.py` | Classical Krylov | NQS loop + H-connection expansion |
+| `06_iterative_nqs/iter_nqs_krylov_quantum.py` | Quantum Krylov | NQS warmup + Trotterized |
+| `06_iterative_nqs/iter_nqs_sqd.py` | SQD | NQS loop + batch diag |
 
-Ablation study: trains NF but uses *only* the NF-generated basis (no Direct-CI merge). Tests how well the flow alone discovers important configurations.
+### Group 07: NF + DCI Merge -> Iterative NQS
 
-```bash
-python experiments/methods/flow_only_krylov.py h2
-python experiments/methods/flow_only_krylov.py --config experiments/configs/flow_only_krylov.yaml
-```
+NF training and DCI merge (same as Group 02 stages 1-2), then iterative NQS refinement.
 
-## 8. `flow_only_sqd.py` -- NF-Only -> SQD (Ablation)
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `07_iterative_nqs_dci/iter_nqs_dci_krylov_classical.py` | Classical Krylov | NF+DCI -> iterative NQS+Krylov |
+| `07_iterative_nqs_dci/iter_nqs_dci_krylov_quantum.py` | Quantum Krylov | NF+DCI -> quantum Krylov |
+| `07_iterative_nqs_dci/iter_nqs_dci_sqd.py` | SQD | NF+DCI -> iterative NQS+SQD |
 
-Same NF-only ablation with SQD instead of Krylov.
+### Group 08: NF + DCI + PT2 -> Iterative NQS
 
-```bash
-python experiments/methods/flow_only_sqd.py h2
-python experiments/methods/flow_only_sqd.py --config experiments/configs/flow_only_sqd.yaml
-```
+NF training, DCI merge, and PT2 expansion (same as Group 03 stages 1-2.5), then iterative NQS.
 
-## 9. `hf_only_krylov.py` -- HF-Only -> Krylov (Baseline)
-
-Baseline: starts from the single Hartree-Fock reference state with no CI or NF basis. Krylov time evolution discovers configurations through exact propagation.
-
-```bash
-python experiments/methods/hf_only_krylov.py h2
-python experiments/methods/hf_only_krylov.py --config experiments/configs/hf_only_krylov.yaml
-```
+| Script | Diag Mode | Description |
+|--------|-----------|-------------|
+| `08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_classical.py` | Classical Krylov | NF+DCI+PT2 -> iterative NQS+Krylov |
+| `08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_krylov_quantum.py` | Quantum Krylov | NF+DCI+PT2 -> quantum Krylov |
+| `08_iterative_nqs_dci_pt2/iter_nqs_dci_pt2_sqd.py` | SQD | NF+DCI+PT2 -> iterative NQS+SQD |
 
 ---
 
 ## Running All Pipelines
 
 ```bash
-# Quick validation on H2
-for script in flow_ci_krylov flow_ci_sqd direct_ci_krylov direct_ci_sqd \
-              iterative_nqs_krylov iterative_nqs_sqd \
-              flow_only_krylov flow_only_sqd hf_only_krylov; do
-    python experiments/methods/${script}.py h2
-done
+# Run all 24 pipelines on H2 and compare
+python experiments/pipelines/run_all_pipelines.py h2 --device cuda
+
+# Run only specific groups
+python experiments/pipelines/run_all_pipelines.py h2 --only 01 02 04
+
+# Skip quantum pipelines (no CUDA-Q needed)
+python experiments/pipelines/run_all_pipelines.py h2 --skip-quantum
+
+# Skip slow iterative pipelines
+python experiments/pipelines/run_all_pipelines.py h2 --skip-iterative
+
+# Save results to JSON
+python experiments/pipelines/run_all_pipelines.py lih --output results.json
 ```
 
 ## Chemical Accuracy Threshold
@@ -124,4 +133,5 @@ All experiments compare results against **1.6 milliHartree (mHa)**, the conventi
 
 - `pyscf` must be installed for molecular integrals and FCI/CCSD
 - GPU experiments require CUDA-enabled PyTorch
+- Quantum Krylov pipelines require `cudaq`
 - Large molecules (N2, CH4, C2H4) may take several minutes on CPU

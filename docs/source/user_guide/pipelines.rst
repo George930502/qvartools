@@ -1,63 +1,61 @@
 Pipeline Methods
 ================
 
-qvartools provides several pipeline methods that combine NF training, basis
-selection, and subspace diagonalization in different configurations. Each
-pipeline is available both as a Python API and as a standalone experiment
-script.
+qvartools provides 24 pipeline methods organized in 8 groups. Each group
+combines a basis generation strategy (rows) with one of three diagonalization
+modes (columns): Classical Krylov, Quantum Circuit Krylov, or SQD.
 
 Pipeline Overview
 -----------------
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 15 50
+   :widths: 25 12 12 51
 
-   * - Pipeline
+   * - Group
      - NF Training
-     - Subspace Method
+     - Diag Modes
      - Description
-   * - NF-SKQD
-     - Yes
-     - SKQD
-     - Full pipeline: train NF, merge with Direct-CI, Krylov expansion
-   * - NF-SQD
-     - Yes
-     - SQD
-     - NF training + noise injection + S-CORE batch diagonalization
-   * - DCI-SKQD
+   * - 01 DCI
      - No
-     - SKQD
-     - Direct-CI configurations + Krylov expansion (no NF)
-   * - DCI-SQD
+     - C / Q / SQD
+     - Deterministic HF + singles + doubles
+   * - 02 NF+DCI
+     - Yes
+     - C / Q / SQD
+     - NF training + DCI merge
+   * - 03 NF+DCI+PT2
+     - Yes
+     - C / Q / SQD
+     - NF + DCI + perturbative expansion
+   * - 04 NF-Only
+     - Yes
+     - C / Q / SQD
+     - NF-only basis (ablation, no DCI)
+   * - 05 HF-Only
      - No
-     - SQD
-     - Direct-CI + noise + S-CORE (no NF training)
-   * - HI-NQS-SKQD
+     - C / Q / SQD
+     - Single HF reference state (baseline)
+   * - 06 Iterative NQS
      - Iterative
-     - SKQD
-     - Iterative NQS + Krylov with eigenvector feedback
-   * - HI-NQS-SQD
-     - Iterative
-     - SQD
-     - Iterative NQS + SQD with eigenvector feedback
-   * - NF-Ablation-SKQD
-     - Yes
-     - SKQD
-     - NF-only basis (no Direct-CI merge) — ablation study
-   * - NF-Ablation-SQD
-     - Yes
-     - SQD
-     - NF-only basis — ablation study
-   * - Trotter-SKQD
-     - No
-     - SKQD
-     - HF-only reference state — baseline/ablation
+     - C / Q / SQD
+     - Autoregressive NQS with eigenvector feedback
+   * - 07 NF+DCI -> Iter NQS
+     - Yes + Iterative
+     - C / Q / SQD
+     - NF+DCI merge then iterative NQS refinement
+   * - 08 NF+DCI+PT2 -> Iter NQS
+     - Yes + Iterative
+     - C / Q / SQD
+     - NF+DCI+PT2 then iterative NQS refinement
+
+**Diag mode key:** C = Classical Krylov (SKQD), Q = Quantum Circuit Krylov
+(Trotterized), SQD = batch diag with noise + S-CORE.
 
 The FlowGuidedKrylovPipeline
 -----------------------------
 
-The main pipeline class orchestrates four stages:
+The main pipeline class orchestrates up to four stages:
 
 **Stage 1: Train** — Joint physics-guided training of the normalizing flow and
 NQS using a mixed objective (teacher KL-divergence + variational energy +
@@ -67,11 +65,11 @@ entropy regularization).
 flow and apply diversity-aware selection to ensure representation across
 excitation ranks.
 
-**Stage 3: Expand** — Optionally enlarge the basis via residual analysis or
-CIPSI-style perturbative selection.
+**Stage 2.5: Expand** (Groups 03, 08 only) — Enlarge the basis via CIPSI-style
+perturbative selection using Hamiltonian connections.
 
-**Stage 4: Refine** — Run either SKQD (Krylov subspace) or SQD (batch
-diagonalization) to compute the ground-state energy.
+**Stage 3: Diagonalize** — Run Classical Krylov (SKQD), Quantum Circuit Krylov,
+or SQD (batch diag) to compute the ground-state energy.
 
 .. code-block:: python
 
@@ -99,42 +97,45 @@ diagonalization) to compute the ground-state energy.
 Iterative Pipelines
 --------------------
 
-The HI-NQS pipelines use an iterative loop where the ground-state eigenvector
+Groups 06-08 use an iterative loop where the ground-state eigenvector
 from each diagonalization is fed back as a training target for the next NQS
 iteration:
 
 .. code-block:: python
 
-   from qvartools.solvers import IterativeNFSQDSolver
+   from qvartools.methods.nqs.hi_nqs_skqd import HINQSSKQDConfig, run_hi_nqs_skqd
    from qvartools.molecules import get_molecule
 
    hamiltonian, mol_info = get_molecule("H2")
+   mol_info["n_orbitals"] = hamiltonian.integrals.n_orbitals
+   mol_info["n_alpha"] = hamiltonian.integrals.n_alpha
+   mol_info["n_beta"] = hamiltonian.integrals.n_beta
 
-   solver = IterativeNFSQDSolver(
-       n_iterations=30,
-       n_samples=5000,
-       convergence_tol=1e-6,
+   config = HINQSSKQDConfig(
+       n_iterations=10,
+       n_samples_per_iter=5000,
+       device="cuda",
    )
 
-   result = solver.solve(hamiltonian, mol_info)
+   result = run_hi_nqs_skqd(hamiltonian, mol_info, config=config)
    print(f"Energy: {result.energy:.10f} Ha")
    print(f"Converged: {result.converged}")
 
 Running Experiment Scripts
 --------------------------
 
-Each pipeline has a corresponding experiment script in
-``experiments/methods/``:
+All 24 pipelines live in ``experiments/pipelines/``:
 
 .. code-block:: bash
 
-   # Run flow+CI -> Krylov on H2 with default parameters
-   python experiments/methods/flow_ci_krylov.py h2
+   # Run a single pipeline
+   python experiments/pipelines/01_dci/dci_krylov_classical.py h2 --device cuda
 
-   # Run with a YAML config file
-   python experiments/methods/flow_ci_krylov.py --config experiments/configs/flow_ci_krylov.yaml
+   # Run all 24 pipelines and compare
+   python experiments/pipelines/run_all_pipelines.py h2 --device cuda
 
-   # Override parameters via CLI
-   python experiments/methods/flow_ci_krylov.py lih --max-epochs 200 --teacher-weight 0.6
+   # Run with a YAML config
+   python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py lih \
+       --config experiments/pipelines/configs/02_nf_dci.yaml --max-epochs 200
 
 See :doc:`yaml_configs` for details on the configuration system.

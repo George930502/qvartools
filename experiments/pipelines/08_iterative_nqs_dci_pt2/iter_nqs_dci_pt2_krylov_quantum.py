@@ -1,15 +1,12 @@
-"""Iterative NQS + DCI+PT2 seed -> Quantum Circuit Krylov.
+"""Pipeline 08b: NF training + DCI merge + PT2 expansion -> Quantum Circuit Krylov.
 
 Pipeline:
-  Phase 1: Generate DCI basis (HF + singles + doubles), then expand via
-           PT2-style H-connection growth. Diagonalise to get seed energy.
-  Phase 2: Iterative NQS warmup via SQD (few iterations).
-  Phase 3: Quantum circuit Krylov (Trotterized exp_pauli) via
-           run_quantum_skqd for the final diagonalisation.
-  Report best energy across all three phases.
+  Stage 1:   NF-NQS training (physics-guided mixed-objective)
+  Stage 2:   Diversity-aware basis extraction (merges NF + HF+S+D essentials)
+  Stage 2.5: PT2 expansion via Hamiltonian connections
+  Stage 3:   Quantum circuit Krylov via QuantumCircuitSKQD (Trotterized)
 
-The PT2 expansion enriches the DCI seed with configurations connected
-via the Hamiltonian to the most important reference determinants.
+Same as Group 03 for stages 1-2.5, then quantum Krylov for stage 3.
 """
 
 from __future__ import annotations
@@ -17,18 +14,16 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from itertools import combinations
+from math import comb
 from pathlib import Path
 
-import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from config_loader import create_base_parser, load_config
+from config_loader import create_base_parser, load_config  # noqa: E402
 
-from qvartools._utils.gpu.diagnostics import gpu_solve_fermion
+from qvartools import FlowGuidedKrylovPipeline, PipelineConfig
 from qvartools.krylov.expansion.krylov_expand import expand_basis_via_connections
-from qvartools.methods.nqs.hi_nqs_sqd import HINQSSQDConfig, run_hi_nqs_sqd
 from qvartools.methods.quantum_circuit.molecular import (
     QuantumSKQDMethodConfig,
     run_quantum_skqd,
@@ -39,58 +34,37 @@ from qvartools.solvers import FCISolver
 CHEMICAL_ACCURACY_MHA = 1.6
 
 
-def generate_dci_configs(hamiltonian, device="cpu"):
-    """Generate HF + singles + doubles deterministically."""
-    n_orb = hamiltonian.integrals.n_orbitals
-    n_alpha = hamiltonian.integrals.n_alpha
-    n_beta = hamiltonian.integrals.n_beta
-    n_qubits = 2 * n_orb
+def detect_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
 
-    hf = [0] * n_qubits
-    for i in range(n_alpha):
-        hf[i] = 1
-    for i in range(n_beta):
-        hf[n_orb + i] = 1
 
-    configs = [list(hf)]
+def get_training_params(n_configs: int) -> dict:
+    if n_configs <= 10:
+        return dict(max_epochs=100, min_epochs=30, samples_per_batch=500,
+                    nf_hidden_dims=[128, 128], nqs_hidden_dims=[128, 128, 128])
+    elif n_configs <= 300:
+        return dict(max_epochs=150, min_epochs=50, samples_per_batch=1000,
+                    nf_hidden_dims=[128, 128], nqs_hidden_dims=[128, 128, 128])
+    elif n_configs <= 2000:
+        return dict(max_epochs=200, min_epochs=80, samples_per_batch=1500,
+                    nf_hidden_dims=[256, 256], nqs_hidden_dims=[256, 256, 256])
+    elif n_configs <= 5000:
+        return dict(max_epochs=300, min_epochs=100, samples_per_batch=2000,
+                    nf_hidden_dims=[256, 256], nqs_hidden_dims=[256, 256, 256])
+    else:
+        return dict(max_epochs=400, min_epochs=150, samples_per_batch=3000,
+                    nf_hidden_dims=[512, 512], nqs_hidden_dims=[512, 512, 512])
 
-    # Singles (alpha)
-    for i in range(n_alpha):
-        for a in range(n_alpha, n_orb):
-            c = list(hf)
-            c[i], c[a] = 0, 1
-            configs.append(c)
-    # Singles (beta)
-    for i in range(n_beta):
-        for a in range(n_beta, n_orb):
-            c = list(hf)
-            c[n_orb + i], c[n_orb + a] = 0, 1
-            configs.append(c)
 
-    # Doubles (alpha-alpha)
-    for i, j in combinations(range(n_alpha), 2):
-        for a, b in combinations(range(n_alpha, n_orb), 2):
-            c = list(hf)
-            c[i], c[j], c[a], c[b] = 0, 0, 1, 1
-            configs.append(c)
-    # Doubles (beta-beta)
-    for i, j in combinations(range(n_beta), 2):
-        for a, b in combinations(range(n_beta, n_orb), 2):
-            c = list(hf)
-            c[n_orb + i], c[n_orb + j], c[n_orb + a], c[n_orb + b] = 0, 0, 1, 1
-            configs.append(c)
-    # Doubles (alpha-beta)
-    for i in range(n_alpha):
-        for j in range(n_beta):
-            for a in range(n_alpha, n_orb):
-                for b in range(n_beta, n_orb):
-                    c = list(hf)
-                    c[i], c[a] = 0, 1
-                    c[n_orb + j], c[n_orb + b] = 0, 1
-                    configs.append(c)
-
-    t = torch.tensor(configs, dtype=torch.long, device=device)
-    return torch.unique(t, dim=0)
+def get_quantum_krylov_params(n_configs: int) -> dict:
+    if n_configs <= 300:
+        return dict(max_krylov_dim=8, shots=100_000)
+    elif n_configs <= 5000:
+        return dict(max_krylov_dim=10, shots=200_000)
+    else:
+        return dict(max_krylov_dim=12, shots=200_000)
 
 
 def main() -> None:
@@ -100,77 +74,27 @@ def main() -> None:
     )
 
     parser = create_base_parser(
-        "Iterative NQS + DCI+PT2 seed -> Quantum Circuit Krylov."
+        "Pipeline 08b: NF + DCI + PT2 -> Quantum Circuit Krylov.",
     )
-    parser.add_argument(
-        "--n-warmup-iterations",
-        type=int,
-        default=None,
-        help="NQS warmup iterations (SQD phase).",
-    )
-    parser.add_argument(
-        "--n-samples-per-iter",
-        type=int,
-        default=None,
-        help="NQS samples per iteration.",
-    )
-    parser.add_argument(
-        "--pt2-max-new",
-        type=int,
-        default=None,
-        help="Max new configs from PT2 expansion of DCI seed.",
-    )
-    parser.add_argument(
-        "--pt2-n-ref",
-        type=int,
-        default=None,
-        help="Reference configs for PT2 expansion.",
-    )
-    parser.add_argument(
-        "--max-krylov-dim",
-        type=int,
-        default=None,
-        help="Maximum Krylov subspace dimension.",
-    )
-    parser.add_argument(
-        "--num-trotter-steps",
-        type=int,
-        default=None,
-        help="Trotter steps per evolution U.",
-    )
-    parser.add_argument(
-        "--trotter-order",
-        type=int,
-        default=None,
-        help="Suzuki-Trotter order (1 or 2).",
-    )
-    parser.add_argument(
-        "--shots", type=int, default=None, help="Measurement shots per Krylov state."
-    )
-    parser.add_argument(
-        "--total-evolution-time",
-        type=float,
-        default=None,
-        help="Total evolution time T for U = e^{-iHT}.",
-    )
-    parser.add_argument(
-        "--backend",
-        type=str,
-        default=None,
-        choices=["auto", "cudaq", "classical", "exact", "lanczos"],
-        help="Sampling backend for quantum Krylov.",
-    )
-    parser.add_argument(
-        "--verbose", action="store_true", default=None, help="Enable verbose logging."
-    )
+    parser.add_argument("--teacher-weight", type=float, default=None)
+    parser.add_argument("--physics-weight", type=float, default=None)
+    parser.add_argument("--entropy-weight", type=float, default=None)
+    parser.add_argument("--max-epochs", type=int, default=None)
+    parser.add_argument("--min-epochs", type=int, default=None)
+    parser.add_argument("--samples-per-batch", type=int, default=None)
+    parser.add_argument("--pt2-max-new", type=int, default=None)
+    parser.add_argument("--pt2-n-ref", type=int, default=None)
+    parser.add_argument("--max-krylov-dim", type=int, default=None)
+    parser.add_argument("--shots", type=int, default=None)
+    parser.add_argument("--backend", type=str, default=None)
+    parser.add_argument("--verbose", action="store_true", default=None)
     args, config = load_config(parser)
 
     device = config.get("device", "auto")
     if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = detect_device()
 
-    # --- Load molecule ---
-    hamiltonian, mol_info = get_molecule(config.get("molecule", "h2"), device=device)
+    hamiltonian, mol_info = get_molecule(args.molecule, device=device)
     n_qubits = mol_info["n_qubits"]
     print(f"Molecule : {mol_info['name']}")
     print(f"Qubits   : {n_qubits}")
@@ -178,90 +102,88 @@ def main() -> None:
     print(f"Device   : {device}")
     print("=" * 60)
 
-    # --- Exact energy ---
+    n_orb = hamiltonian.integrals.n_orbitals
+    n_alpha = hamiltonian.integrals.n_alpha
+    n_beta = hamiltonian.integrals.n_beta
+    n_configs = comb(n_orb, n_alpha) * comb(n_orb, n_beta)
+
     fci_result = FCISolver().solve(hamiltonian, mol_info)
     exact_energy = fci_result.energy
     print(f"Exact (FCI) energy: {exact_energy:.10f} Ha")
     print("-" * 60)
 
+    train_defaults = get_training_params(n_configs)
+    qkrylov_defaults = get_quantum_krylov_params(n_configs)
+
     t_start = time.perf_counter()
 
-    # === Phase 1: DCI + PT2 seed ===
-    print("\n[Phase 1] Generating DCI basis + PT2 expansion...")
-    dci_basis = generate_dci_configs(hamiltonian, device)
-    print(f"  DCI basis (pre-PT2): {dci_basis.shape[0]} configs")
+    # === Stage 1-2: NF training + DCI merge ===
+    print("\n[Stage 1-2] NF-NQS training + DCI merge...")
+    pipe_config = PipelineConfig(
+        skip_nf_training=False,
+        subspace_mode="classical_krylov",
+        teacher_weight=config.get("teacher_weight", 0.5),
+        physics_weight=config.get("physics_weight", 0.4),
+        entropy_weight=config.get("entropy_weight", 0.1),
+        device=device,
+        max_epochs=config.get("max_epochs", train_defaults["max_epochs"]),
+        min_epochs=config.get("min_epochs", train_defaults["min_epochs"]),
+        samples_per_batch=config.get("samples_per_batch", train_defaults["samples_per_batch"]),
+        nf_hidden_dims=config.get("nf_hidden_dims", train_defaults["nf_hidden_dims"]),
+        nqs_hidden_dims=config.get("nqs_hidden_dims", train_defaults["nqs_hidden_dims"]),
+    )
 
+    pipeline = FlowGuidedKrylovPipeline(
+        hamiltonian=hamiltonian,
+        config=pipe_config,
+        exact_energy=exact_energy,
+        auto_adapt=True,
+    )
+
+    history = pipeline.train_flow_nqs(progress=True)
+    n_epochs = len(history.get("total_loss", []))
+    basis = pipeline.extract_and_select_basis()
+
+    # === Stage 2.5: PT2 expansion ===
     pt2_max_new = config.get("pt2_max_new", 500)
     pt2_n_ref = config.get("pt2_n_ref", 10)
-    dci_pt2_basis = expand_basis_via_connections(
-        dci_basis, hamiltonian, max_new=pt2_max_new, n_ref=pt2_n_ref
+    basis_before = basis.shape[0]
+    basis = expand_basis_via_connections(
+        basis, hamiltonian, max_new=pt2_max_new, n_ref=pt2_n_ref,
     )
-    dci_pt2_basis = dci_pt2_basis.to(device)
-    print(f"  DCI+PT2 basis      : {dci_pt2_basis.shape[0]} configs (+{dci_pt2_basis.shape[0] - dci_basis.shape[0]} from PT2)")
+    print(f"  PT2 expansion: {basis_before} -> {basis.shape[0]} configs")
 
-    dci_energy, dci_coeffs, dci_occs = gpu_solve_fermion(dci_pt2_basis, hamiltonian)
-    dci_energy = float(dci_energy)
-    print(f"  DCI+PT2 energy     : {dci_energy:.10f} Ha")
-    print(f"  DCI+PT2 error      : {(dci_energy - exact_energy) * 1000:.4f} mHa")
+    nf_time = time.perf_counter() - t_start
 
-    # === Phase 2: Iterative NQS warmup (SQD) ===
-    n_warmup = config.get("n_warmup_iterations", 3)
-    print(f"\n[Phase 2] NQS warmup ({n_warmup} iterations via SQD)...")
-    warmup_config = HINQSSQDConfig(
-        n_iterations=n_warmup,
-        n_samples_per_iter=config.get("n_samples_per_iter", 5000),
-        n_batches=config.get("n_batches", 5),
-        max_configs_per_batch=config.get("max_configs_per_batch", 5000),
-        energy_tol=config.get("energy_tol", 1e-5),
-        nqs_lr=config.get("nqs_lr", 1e-3),
-        nqs_train_epochs=config.get("nqs_train_epochs", 50),
-        embed_dim=config.get("embed_dim", 64),
-        n_heads=config.get("n_heads", 4),
-        n_layers=config.get("n_layers", 4),
-        temperature=config.get("temperature", 1.0),
+    # === Stage 3: Quantum Circuit Krylov ===
+    print("\nRunning Quantum Circuit SKQD (Trotterized Krylov evolution)...")
+    max_krylov_dim = config.get("max_krylov_dim", qkrylov_defaults["max_krylov_dim"])
+    shots = config.get("shots", qkrylov_defaults["shots"])
+    backend = config.get("backend", "auto")
+
+    method_config = QuantumSKQDMethodConfig(
+        max_krylov_dim=max_krylov_dim,
+        shots=shots,
+        backend=backend,
         device=device,
     )
-    warmup_result = run_hi_nqs_sqd(hamiltonian, mol_info, config=warmup_config)
-    print(f"  Warmup energy  : {warmup_result.energy:.10f} Ha")
-    print(f"  Warmup basis   : {warmup_result.diag_dim}")
 
-    # === Phase 3: Quantum Circuit Krylov ===
-    print("\n[Phase 3] Running Quantum Circuit Krylov (Trotterized)...")
-    quantum_config = QuantumSKQDMethodConfig(
-        max_krylov_dim=config.get("max_krylov_dim", 12),
-        total_evolution_time=config.get("total_evolution_time", np.pi),
-        num_trotter_steps=config.get("num_trotter_steps", 1),
-        trotter_order=config.get("trotter_order", 2),
-        shots=config.get("shots", 100_000),
-        backend=config.get("backend", "auto"),
-        use_gpu=device != "cpu",
-        device=device,
-    )
-    quantum_result = run_quantum_skqd(hamiltonian, mol_info, config=quantum_config)
-    print(f"  Quantum energy : {quantum_result.energy:.10f} Ha")
-    print(f"  Quantum basis  : {quantum_result.diag_dim}")
-
-    # === Combine results ===
-    final_energy = min(dci_energy, warmup_result.energy, quantum_result.energy)
+    t_quantum = time.perf_counter()
+    result = run_quantum_skqd(hamiltonian, mol_info, config=method_config)
+    quantum_time = time.perf_counter() - t_quantum
     wall_time = time.perf_counter() - t_start
+
+    final_energy = result.energy
     error_mha = (final_energy - exact_energy) * 1000.0
     within = "YES" if abs(error_mha) < CHEMICAL_ACCURACY_MHA else "NO"
 
-    # --- Results summary ---
     print("\n" + "=" * 60)
-    print("ITERATIVE NQS + DCI+PT2 -> QUANTUM KRYLOV RESULTS")
+    print("PIPELINE 08b: NF+DCI+PT2 -> QUANTUM KRYLOV RESULTS")
     print("=" * 60)
-    print(f"DCI+PT2 energy   : {dci_energy:.10f} Ha  ({(dci_energy - exact_energy) * 1000:.4f} mHa)")
-    print(f"NQS warmup energy: {warmup_result.energy:.10f} Ha  ({(warmup_result.energy - exact_energy) * 1000:.4f} mHa)")
-    print(f"Quantum energy   : {quantum_result.energy:.10f} Ha  ({(quantum_result.energy - exact_energy) * 1000:.4f} mHa)")
-
-    energies = quantum_result.metadata.get("energies_per_krylov", [])
-    if energies:
-        print("\n  Quantum Krylov convergence:")
-        for i, e in enumerate(energies):
-            step_err = (e - exact_energy) * 1000.0
-            print(f"    k={i + 2:>3}: {e:.10f} Ha  (error: {step_err:.4f} mHa)")
-
+    print(f"NF training      : {n_epochs} epochs")
+    print(f"NF+DCI basis     : {basis_before} configs")
+    print(f"PT2 expanded     : {basis.shape[0]} configs")
+    print(f"Quantum time     : {quantum_time:.2f} s")
     print(f"\nFinal energy : {final_energy:.10f} Ha")
     print(f"Exact energy : {exact_energy:.10f} Ha")
     print(f"Error        : {error_mha:.4f} mHa")

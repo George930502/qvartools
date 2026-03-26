@@ -97,17 +97,21 @@ results = pipeline.run()
 print(f"Energy: {results['final_energy']:.10f} Ha")
 ```
 
-### Running experiments with YAML configs
+### Running experiment pipelines
 
 ```bash
-# Run with default config
-python experiments/methods/flow_ci_krylov.py h2
+# Run a single pipeline on H2
+python experiments/pipelines/01_dci/dci_krylov_classical.py h2 --device cuda
 
-# Run with custom YAML config
-python experiments/methods/flow_ci_krylov.py --config experiments/configs/flow_ci_krylov.yaml
+# Run all 24 pipelines and compare
+python experiments/pipelines/run_all_pipelines.py h2 --device cuda
 
-# Override specific parameters
-python experiments/methods/flow_ci_krylov.py lih --config experiments/configs/flow_ci_krylov.yaml --max-epochs 200
+# Skip quantum or iterative pipelines for faster validation
+python experiments/pipelines/run_all_pipelines.py h2 --skip-quantum --skip-iterative
+
+# Run with a YAML config override
+python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py lih \
+    --config experiments/pipelines/configs/02_nf_dci.yaml --max-epochs 200
 ```
 
 ## Package Architecture

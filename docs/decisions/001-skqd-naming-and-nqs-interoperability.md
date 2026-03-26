@@ -119,7 +119,7 @@ Create adapter layers so any NQS model can be used in any pipeline:
 ### Follow-up Work Needed
 - ADR-002: Decide whether to fully deprecate and remove the classical Krylov implementation, or keep it as a baseline.
 - ADR-003: Decide the exact NQS protocol (whether to use Python `Protocol` typing, ABC enforcement, or duck typing).
-- Update all 9 experiment scripts in `experiments/methods/` to use the new routing names.
+- ~~Update all 9 experiment scripts in `experiments/methods/` to use the new routing names.~~ **Done:** Replaced by 24 pipeline scripts in `experiments/pipelines/`.
 - Update all tests that reference the old class/mode names.
 
 ---

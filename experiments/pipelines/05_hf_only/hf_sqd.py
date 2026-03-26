@@ -1,12 +1,12 @@
-"""CudaQ SKQD --- HF-only reference state -> Krylov time evolution.
+"""HF-only -> SQD batch diagonalisation with noise + S-CORE.
 
 Pipeline: Uses only the HF reference state (1 configuration) as the
-starting point. Krylov time evolution discovers additional configurations
-through exact time propagation. No singles/doubles, no NF training.
+starting point. Replicates it to simulate shot sampling, injects noise,
+then runs SQD with self-consistent configuration recovery.
 
-Uses skip_nf_training=True with subspace_mode="classical_krylov". After
-train_flow_nqs() generates HF+S+D, we replace _essential_configs with
-just the HF state, then extract_and_select_basis(), then run_subspace_diag().
+Uses skip_nf_training=True, subspace_mode="sqd". After generating
+HF+S+D via train_flow_nqs(), overrides with HF-only, then replicates
+and runs SQD.
 """
 
 from __future__ import annotations
@@ -19,8 +19,7 @@ from pathlib import Path
 
 import torch
 
-# Make the experiments package importable when running as a script.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from config_loader import create_base_parser, load_config  # noqa: E402
 
 from qvartools import FlowGuidedKrylovPipeline, PipelineConfig
@@ -31,20 +30,32 @@ CHEMICAL_ACCURACY_MHA = 1.6
 
 
 def detect_device() -> str:
-    """Return 'cuda' if available, else 'cpu'."""
     if torch.cuda.is_available():
         return "cuda"
     return "cpu"
 
 
-def get_skqd_params(n_configs: int) -> dict:
-    """Scale SKQD parameters based on Hilbert-space size."""
-    if n_configs <= 300:
-        return dict(max_krylov_dim=8, shots_per_krylov=100_000)
+def get_noise_rate(n_qubits: int) -> float:
+    return 0.03 if n_qubits <= 4 else 0.05
+
+
+def get_shots_multiplier(n_unique: int, n_qubits: int) -> int:
+    target_shots = 20_000
+    return max(10, min(200, target_shots // max(n_unique, 1)))
+
+
+def get_sqd_params(n_configs: int) -> dict:
+    if n_configs <= 2000:
+        sqd_num_batches = 5
     elif n_configs <= 5000:
-        return dict(max_krylov_dim=10, shots_per_krylov=200_000)
+        sqd_num_batches = 8
     else:
-        return dict(max_krylov_dim=12, shots_per_krylov=200_000)
+        sqd_num_batches = 10
+    return dict(
+        sqd_num_batches=sqd_num_batches,
+        sqd_self_consistent_iters=5,
+        sqd_use_spin_symmetry=n_configs <= 5000,
+    )
 
 
 def main() -> None:
@@ -53,10 +64,10 @@ def main() -> None:
         format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     )
 
-    # --- Parse CLI / YAML config ---
-    parser = create_base_parser("CudaQ SKQD: HF-only -> Krylov time evolution.")
-    parser.add_argument("--max-krylov-dim", type=int, default=None)
-    parser.add_argument("--shots-per-krylov", type=int, default=None)
+    parser = create_base_parser("HF-only -> SQD (noise -> S-CORE).")
+    parser.add_argument("--sqd-num-batches", type=int, default=None)
+    parser.add_argument("--sqd-self-consistent-iters", type=int, default=None)
+    parser.add_argument("--sqd-noise-rate", type=float, default=None)
     parser.add_argument("--verbose", action="store_true", default=None)
     args, config = load_config(parser)
 
@@ -64,7 +75,6 @@ def main() -> None:
     if device == "auto":
         device = detect_device()
 
-    # --- Load molecule ---
     hamiltonian, mol_info = get_molecule(args.molecule, device=device)
     n_qubits = mol_info["n_qubits"]
     print(f"Molecule : {mol_info['name']}")
@@ -73,71 +83,76 @@ def main() -> None:
     print(f"Device   : {device}")
     print("=" * 60)
 
-    # --- Compute Hilbert-space size ---
     n_orb = hamiltonian.integrals.n_orbitals
     n_alpha = hamiltonian.integrals.n_alpha
     n_beta = hamiltonian.integrals.n_beta
     n_configs = comb(n_orb, n_alpha) * comb(n_orb, n_beta)
     print(f"Hilbert space: {n_configs:,} configs")
 
-    # --- Compute exact energy for comparison ---
     fci_result = FCISolver().solve(hamiltonian, mol_info)
     exact_energy = fci_result.energy
     print(f"Exact (FCI) energy: {exact_energy:.10f} Ha")
     print("-" * 60)
 
-    # --- Auto-scale defaults, then override with config values ---
-    skqd_defaults = get_skqd_params(n_configs)
-    max_krylov_dim = config.get("max_krylov_dim", skqd_defaults["max_krylov_dim"])
-    shots_per_krylov = config.get("shots_per_krylov", skqd_defaults["shots_per_krylov"])
+    noise_rate = config.get("sqd_noise_rate", get_noise_rate(n_qubits))
+    sqd_defaults = get_sqd_params(n_configs)
 
-    # --- Configure pipeline: Direct-CI mode + SKQD ---
-    pipe_config = PipelineConfig(
+    pipeline_config = PipelineConfig(
         skip_nf_training=True,
-        subspace_mode="classical_krylov",
+        subspace_mode="sqd",
+        sqd_noise_rate=noise_rate,
         device=device,
-        max_krylov_dim=max_krylov_dim,
-        shots_per_krylov=shots_per_krylov,
+        sqd_num_batches=config.get("sqd_num_batches", sqd_defaults["sqd_num_batches"]),
+        sqd_self_consistent_iters=config.get(
+            "sqd_self_consistent_iters", sqd_defaults["sqd_self_consistent_iters"]
+        ),
+        sqd_use_spin_symmetry=config.get(
+            "sqd_use_spin_symmetry", sqd_defaults["sqd_use_spin_symmetry"]
+        ),
     )
 
-    # --- Build pipeline ---
     pipeline = FlowGuidedKrylovPipeline(
         hamiltonian=hamiltonian,
-        config=pipe_config,
+        config=pipeline_config,
         exact_energy=exact_energy,
         auto_adapt=True,
     )
 
     t_start = time.perf_counter()
 
-    # Stage 1: Direct-CI generates HF+S+D essential configs
+    # Stage 1: Generate HF+S+D (Direct-CI)
     pipeline.train_flow_nqs(progress=True)
 
-    # Override: replace essential configs with HF state only (1 config)
+    # Override: HF state only
     hf_state = pipeline.reference_state.clone().unsqueeze(0)
-    pipeline._essential_configs = hf_state
+    pipeline._essential_configs = hf_state  # noqa: SLF001
     print(f"Overriding basis: HF state only ({hf_state.shape[0]} config)")
 
-    # Stage 2: Extract basis (now just the HF state)
+    # Stage 2: Extract basis (just HF)
     basis = pipeline.extract_and_select_basis()
-    print(f"Basis for SKQD: {basis.shape[0]} configs")
+    n_unique = basis.shape[0]
+    print(f"HF-only basis: {n_unique} config(s)")
 
-    # Stage 3: SKQD Krylov diagonalization discovers configurations
-    skqd_results = pipeline.run_subspace_diag(progress=True)
+    # Replicate for shot simulation
+    shots_mult = get_shots_multiplier(n_unique, n_qubits)
+    total_shots = n_unique * shots_mult
+    replicated_basis = basis.repeat(shots_mult, 1)
+    pipeline.nf_basis = replicated_basis
+    print(f"Shots multiplier: {shots_mult}x -> {total_shots} total shots")
+    print(f"Noise rate: {noise_rate}")
+
+    # Stage 3: SQD batch diag with noise + S-CORE
+    pipeline.run_subspace_diag(progress=True)
 
     wall_time = time.perf_counter() - t_start
 
-    # --- Results summary ---
+    # Results
     print("\n" + "=" * 60)
-    print("CUDAQ SKQD RESULTS (HF-only -> Krylov)")
+    print("HF-ONLY -> SQD RESULTS (noise -> S-CORE)")
     print("=" * 60)
-    print("Initial basis: 1 config (HF only)")
-
-    if skqd_results.get("energies_per_step"):
-        print("\n  SKQD energy convergence:")
-        for i, e in enumerate(skqd_results["energies_per_step"]):
-            label = "HF-only" if i == 0 else f"k={i - 1}"
-            print(f"    {label:>8}: {e:.10f} Ha")
+    print(f"Initial basis: {n_unique} config (HF only)")
+    print(f"Noise rate   : {noise_rate}")
+    print(f"Total shots  : {total_shots}")
 
     final_energy = pipeline.results.get(
         "final_energy", pipeline.results.get("combined_energy")
@@ -151,7 +166,7 @@ def main() -> None:
     if error_mha is not None:
         print(f"Error        : {error_mha:.4f} mHa")
         within = "YES" if abs(error_mha) < CHEMICAL_ACCURACY_MHA else "NO"
-        print(f"Chemical acc.: {within} (threshold = {CHEMICAL_ACCURACY_MHA} mHa)")
+        print(f"Chemical acc.: {within}")
     print(f"Wall time    : {wall_time:.2f} s")
     print("=" * 60)
 

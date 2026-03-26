@@ -1,4 +1,4 @@
-"""Run all 23 SKQD/SQD pipeline variants and compare results.
+"""Run all 24 SKQD/SQD pipeline variants and compare results.
 
 Usage:
     python run_all_pipelines.py h2
@@ -25,7 +25,7 @@ from qvartools.solvers import FCISolver
 
 CHEMICAL_ACCURACY_MHA = 1.6
 
-# ---- All 23 pipelines, organized by group ----
+# ---- All 24 pipelines, organized by group ----
 PIPELINES = [
     # (group, script_path, short_name, description)
     ("01_dci", "01_dci/dci_krylov_classical.py", "DCI+Krylov-C", "DCI → Classical Krylov"),
@@ -42,6 +42,7 @@ PIPELINES = [
     ("04_nf_only", "04_nf_only/nf_sqd.py", "NF+SQD", "NF-only → SQD"),
     ("05_hf_only", "05_hf_only/hf_krylov_classical.py", "HF+Krylov-C", "HF-only → Classical Krylov"),
     ("05_hf_only", "05_hf_only/hf_krylov_quantum.py", "HF+Krylov-Q", "HF-only → Quantum Krylov"),
+    ("05_hf_only", "05_hf_only/hf_sqd.py", "HF+SQD", "HF-only → SQD"),
     ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_krylov_classical.py", "Iter+Krylov-C", "Iterative NQS → Classical Krylov"),
     ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_krylov_quantum.py", "Iter+Krylov-Q", "Iterative NQS → Quantum Krylov"),
     ("06_iterative_nqs", "06_iterative_nqs/iter_nqs_sqd.py", "Iter+SQD", "Iterative NQS → SQD"),
@@ -149,7 +150,7 @@ def _parse_wall_time(output: str) -> float | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run all 23 SKQD/SQD pipelines and compare."
+        description="Run all 24 SKQD/SQD pipelines and compare."
     )
     parser.add_argument(
         "molecule", nargs="?", default="h2",
