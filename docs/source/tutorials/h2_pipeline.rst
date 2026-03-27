@@ -111,11 +111,15 @@ For H2, the error should be well within chemical accuracy (1.6 mHa).
 Running from the Command Line
 ------------------------------
 
-The same pipeline can be run as a standalone script:
+The same pipeline can be run as a standalone experiment script:
 
 .. code-block:: bash
 
-   python experiments/methods/flow_ci_krylov.py h2
+   python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py h2 --device cuda
 
    # Or with a YAML config
-   python experiments/methods/flow_ci_krylov.py --config experiments/configs/flow_ci_krylov.yaml
+   python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py h2 \
+       --config experiments/pipelines/configs/02_nf_dci.yaml
+
+   # Run all 24 pipelines and compare
+   python experiments/pipelines/run_all_pipelines.py h2 --device cuda

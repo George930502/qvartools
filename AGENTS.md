@@ -323,26 +323,17 @@ qvartools/
 ├── experiments/                  # Reproducible experiment scripts
 │   ├── config_loader.py          # YAML loader with CLI overrides (--config, --device)
 │   ├── profile_pipeline.py       # Wall-clock profiling of pipeline stages
-│   ├── configs/                  # 9 YAML configuration files
-│   │   ├── direct_ci_krylov.yaml
-│   │   ├── direct_ci_sqd.yaml
-│   │   ├── flow_ci_krylov.yaml
-│   │   ├── flow_ci_sqd.yaml
-│   │   ├── flow_only_krylov.yaml
-│   │   ├── flow_only_sqd.yaml
-│   │   ├── hf_only_krylov.yaml
-│   │   ├── iterative_nqs_krylov.yaml
-│   │   └── iterative_nqs_sqd.yaml
-│   └── methods/                  # 9 experiment method scripts
-│       ├── direct_ci_krylov.py   # Direct-CI → Krylov
-│       ├── direct_ci_sqd.py      # Direct-CI → SQD
-│       ├── flow_ci_krylov.py     # NF + CI → Krylov
-│       ├── flow_ci_sqd.py        # NF + CI → SQD
-│       ├── flow_only_krylov.py   # NF-only → Krylov (ablation)
-│       ├── flow_only_sqd.py      # NF-only → SQD (ablation)
-│       ├── hf_only_krylov.py     # HF-only → Krylov (baseline)
-│       ├── iterative_nqs_krylov.py  # Iterative NQS → Krylov
-│       └── iterative_nqs_sqd.py     # Iterative NQS → SQD
+│   └── pipelines/                # 24 end-to-end pipeline scripts (8 groups × 3 diag modes)
+│       ├── run_all_pipelines.py  # Run all 24 pipelines and compare results
+│       ├── configs/              # 8 YAML config files (one per group)
+│       ├── 01_dci/               # Direct-CI (no NF): classical, quantum, SQD
+│       ├── 02_nf_dci/            # NF + DCI merge: classical, quantum, SQD
+│       ├── 03_nf_dci_pt2/        # NF + DCI + PT2 expansion: classical, quantum, SQD
+│       ├── 04_nf_only/           # NF-only ablation: classical, quantum, SQD
+│       ├── 05_hf_only/           # HF-only baseline: classical, quantum, SQD
+│       ├── 06_iterative_nqs/     # Iterative NQS: classical, quantum, SQD
+│       ├── 07_iterative_nqs_dci/ # NF+DCI merge → iterative NQS: classical, quantum, SQD
+│       └── 08_iterative_nqs_dci_pt2/  # NF+DCI+PT2 → iterative NQS: classical, quantum, SQD
 │
 ├── docs/                         # Documentation
 │   ├── architecture.md           # Design philosophy, module dependency graph
@@ -577,29 +568,29 @@ pytest --cov=qvartools --cov-report=term-missing
 
 ### Config Loader Pattern
 
-All experiment scripts use the shared `config_loader.py`:
+All 24 pipeline scripts use the shared `config_loader.py`:
 
 ```bash
-python experiments/methods/flow_ci_krylov.py h2
-python experiments/methods/flow_ci_krylov.py lih --config experiments/configs/flow_ci_krylov.yaml
-python experiments/methods/flow_ci_krylov.py beh2 --config experiments/configs/flow_ci_krylov.yaml --max-epochs 200
+python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py h2 --device cuda
+python experiments/pipelines/run_all_pipelines.py h2 --device cuda
+python experiments/pipelines/02_nf_dci/nf_dci_krylov_classical.py lih \
+    --config experiments/pipelines/configs/02_nf_dci.yaml --max-epochs 200
 ```
 
 **Precedence:** CLI args > YAML file > hardcoded defaults.
 
-### 9 Method Variants
+### 24 Pipeline Variants (8 Groups × 3 Diag Modes)
 
-| Script | Basis Source | Diag Mode | Key Feature |
-|--------|------------|-----------|-------------|
-| `direct_ci_krylov` | HF+S+D | SKQD | No NF training |
-| `direct_ci_sqd` | HF+S+D | SQD | No NF training, noise injection |
-| `flow_ci_krylov` | NF + CI merge | SKQD | Full NF-NQS pipeline |
-| `flow_ci_sqd` | NF + CI merge | SQD | Full NF-NQS + SQD |
-| `flow_only_krylov` | NF only | SKQD | Ablation: no CI scaffolding |
-| `flow_only_sqd` | NF only | SQD | Ablation: no CI scaffolding |
-| `hf_only_krylov` | HF reference | SKQD | Baseline: Krylov from HF |
-| `iterative_nqs_krylov` | NQS iter | SKQD | Eigenvector feedback loop |
-| `iterative_nqs_sqd` | NQS iter | SQD | Eigenvector feedback loop |
+| Group | Basis Source | Classical Krylov | Quantum Krylov | SQD |
+|-------|-------------|-----------------|----------------|-----|
+| 01 DCI | HF+S+D | Yes | Yes | Yes |
+| 02 NF+DCI | NF + CI merge | Yes | Yes | Yes |
+| 03 NF+DCI+PT2 | NF + CI + PT2 | Yes | Yes | Yes |
+| 04 NF-Only | NF only (ablation) | Yes | Yes | Yes |
+| 05 HF-Only | HF reference (baseline) | Yes | Yes | Yes |
+| 06 Iterative NQS | NQS loop | Yes | Yes | Yes |
+| 07 NF+DCI → Iter NQS | NF+DCI merge → NQS loop | Yes | Yes | Yes |
+| 08 NF+DCI+PT2 → Iter NQS | NF+DCI+PT2 → NQS loop | Yes | Yes | Yes |
 
 ---
 
@@ -681,15 +672,15 @@ Configurations are bucketed by excitation rank (0, 1, 2, 3, 4+) relative to HF r
 3. Export from appropriate `__init__.py`
 4. Add test in `tests/test_hamiltonians/`
 
-### Adding a New Experiment Method
+### Adding a New Experiment Pipeline
 
-1. Create script in `experiments/methods/` following the pattern:
-   - Import `config_loader`
-   - Define default config dict
-   - Load molecule, compute FCI reference
-   - Run method pipeline
-   - Report energy and error
-2. Create matching YAML in `experiments/configs/`
+1. Create script in `experiments/pipelines/<group>/` following the pattern:
+   - Import `config_loader` via `sys.path.insert`
+   - Auto-detect device, load molecule, compute FCI reference
+   - Run pipeline stages (train → select → diag)
+   - Report energy, error, and timing
+2. Add entry to `experiments/pipelines/run_all_pipelines.py` PIPELINES list
+3. Create or update YAML in `experiments/pipelines/configs/`
 
 ---
 

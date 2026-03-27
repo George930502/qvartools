@@ -29,7 +29,7 @@ RUN python -m pip install --upgrade pip
 # Install torch cu126 (matches CUDA 12.6 base, cusparse ~12.5 aligns with cudaq)
 RUN uv pip install --system --no-cache \
     torch --index-url https://download.pytorch.org/whl/cu126 && \
-    uv pip install --system --no-cache ".[full,gpu,dev]"
+    uv pip install --system --no-cache ".[full,gpu,dev,configs]"
 
 # Install CUDA-Q + qiskit quantum deps in one resolver pass to avoid conflicts
 RUN pip install --no-cache-dir \
