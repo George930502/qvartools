@@ -222,9 +222,18 @@ def run_hi_nqs_skqd(
     cfg = config or HINQSSKQDConfig()
 
     # Support mol_info with or without orbital counts (fall back to hamiltonian)
-    n_orb: int = mol_info.get("n_orbitals") or hamiltonian.integrals.n_orbitals
-    n_alpha: int = mol_info.get("n_alpha") or hamiltonian.integrals.n_alpha
-    n_beta: int = mol_info.get("n_beta") or hamiltonian.integrals.n_beta
+    _integrals = getattr(hamiltonian, "integrals", None)
+    n_orb: int = mol_info.get(
+        "n_orbitals", _integrals.n_orbitals if _integrals else None
+    )
+    n_alpha: int = mol_info.get("n_alpha", _integrals.n_alpha if _integrals else None)
+    n_beta: int = mol_info.get("n_beta", _integrals.n_beta if _integrals else None)
+    if n_orb is None or n_alpha is None or n_beta is None:
+        raise ValueError(
+            "n_orbitals, n_alpha, and n_beta must be provided via mol_info "
+            "or hamiltonian.integrals. Got: "
+            f"n_orbitals={n_orb}, n_alpha={n_alpha}, n_beta={n_beta}"
+        )
     n_qubits: int = mol_info.get("n_qubits", 2 * n_orb)
     device = torch.device(cfg.device)
 

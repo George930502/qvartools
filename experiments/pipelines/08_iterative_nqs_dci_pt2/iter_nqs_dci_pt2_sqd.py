@@ -181,7 +181,7 @@ def main() -> None:
     mol_info["n_beta"] = n_beta
 
     sqd_config = HINQSSQDConfig(
-        n_iterations=config.get("n_iterations", 10),
+        n_iterations=config.get("max_iterations", 10),
         n_samples_per_iter=config.get("n_samples_per_iter", 5000),
         nqs_train_epochs=config.get("nqs_train_epochs", 50),
         device=device,

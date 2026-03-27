@@ -58,13 +58,21 @@ def get_training_params(n_configs: int) -> dict:
             nf_hidden_dims=[256, 256],
             nqs_hidden_dims=[256, 256, 256],
         )
-    else:
+    elif n_configs <= 5000:
         return dict(
             max_epochs=300,
             min_epochs=100,
             samples_per_batch=2000,
             nf_hidden_dims=[256, 256],
             nqs_hidden_dims=[256, 256, 256],
+        )
+    else:
+        return dict(
+            max_epochs=400,
+            min_epochs=150,
+            samples_per_batch=3000,
+            nf_hidden_dims=[512, 512],
+            nqs_hidden_dims=[512, 512, 512],
         )
 
 
