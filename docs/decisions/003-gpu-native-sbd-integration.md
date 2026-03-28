@@ -11,13 +11,19 @@
 
 Our SQD `_diagonalize_batch` builds a dense projected Hamiltonian via
 `matrix_elements` (89.6% of wall time) and diagonalizes with
-`np.linalg.eigh`. This approach has two fundamental limitations:
+`np.linalg.eigh`. The remaining fundamental limitation is:
 
-1. **No alpha×beta Cartesian product** — subspace is `n_configs` instead
-   of `|unique_alpha| × |unique_beta|`, giving worse variational energy
-   than IBM's `solve_fermion`
+1. ~~**No alpha×beta Cartesian product**~~ — **Fixed in PR #15** via
+   `split_spin_strings` + `cartesian_product_configs` + particle
+   number filtering. LiH verified: 0.0134 mHa improvement.
 2. **Dense H construction scales O(n²)** — infeasible for subspaces
-   above ~10K configurations
+   above ~10K configurations. `matrix_elements` is 89.6% of wall time.
+
+**Note on Route B (Dice solver):** `qiskit-addon-dice-solver` on PyPI
+is a **stub package** — the actual Dice C++ binary must be compiled
+from source. Not trivially installable on DGX Spark ARM64. Route B
+and Route C both require C++ compilation on ARM64, so Route C (GPU
+SBD, 40x speedup) is strictly better to pursue.
 
 Two GPU-native SBD implementations published in January 2026 solve
 both problems via **matrix-free** Davidson iteration (H|v⟩ computed
