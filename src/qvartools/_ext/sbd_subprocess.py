@@ -163,7 +163,7 @@ def sbd_diagonalize(
         _write_bitstrings(beta_path, beta_strings)
 
         cmd = [mpirun]
-        if os.getuid() == 0:
+        if hasattr(os, "getuid") and os.getuid() == 0:
             cmd.append("--allow-run-as-root")
         cmd += [
             "-np",
@@ -197,7 +197,10 @@ def sbd_diagonalize(
 
         if result.returncode != 0:
             raise RuntimeError(
-                f"sbd failed (exit {result.returncode}): {result.stderr[:500]}"
+                f"sbd failed (exit {result.returncode})\n"
+                f"Command: {' '.join(cmd)}\n"
+                f"Stdout: {(result.stdout or '')[:500]}\n"
+                f"Stderr: {(result.stderr or '')[:500]}"
             )
 
         # Parse the LAST "Energy =" line (final result, not intermediate)

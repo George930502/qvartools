@@ -12,7 +12,7 @@ class TestSbdSubprocess:
     """Tests for sbd_diagonalize via subprocess."""
 
     def test_sbd_available(self) -> None:
-        """sbd_available should return True if binary exists."""
+        """sbd_available should return a bool."""
         from qvartools._ext.sbd_subprocess import sbd_available
 
         # May be True or False depending on environment
