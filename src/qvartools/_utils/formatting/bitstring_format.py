@@ -13,11 +13,129 @@ import numpy as np
 import torch
 
 __all__ = [
-    "hash_config",
+    "cartesian_product_configs",
     "configs_to_ibm_format",
+    "hash_config",
     "ibm_format_to_configs",
+    "split_spin_strings",
     "vectorized_dedup",
 ]
+
+
+def split_spin_strings(
+    configs: torch.Tensor,
+    n_orbitals: int | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Split configurations into unique alpha and beta occupation strings.
+
+    Given configs in qvartools format ``[alpha_0, ..., alpha_{n-1},
+    beta_0, ..., beta_{n-1}]``, extracts the alpha and beta halves
+    and returns only the unique strings for each spin channel.
+
+    Parameters
+    ----------
+    configs : torch.Tensor
+        Binary configurations, shape ``(n_configs, 2 * n_orbitals)``.
+    n_orbitals : int or None, optional
+        Number of spatial orbitals.  If ``None``, inferred as
+        ``configs.shape[1] // 2``.
+
+    Returns
+    -------
+    unique_alpha : torch.Tensor
+        Unique alpha occupation strings, shape ``(n_alpha, n_orbitals)``.
+    unique_beta : torch.Tensor
+        Unique beta occupation strings, shape ``(n_beta, n_orbitals)``.
+    """
+    if configs.ndim != 2:
+        raise ValueError(f"configs must be 2D, got {configs.ndim}D")
+
+    if n_orbitals is None:
+        if configs.shape[1] % 2 != 0:
+            raise ValueError(
+                f"configs has odd column count ({configs.shape[1]}); "
+                f"cannot infer n_orbitals. Pass n_orbitals explicitly."
+            )
+        n_orbitals = configs.shape[1] // 2
+    elif configs.shape[1] != 2 * n_orbitals:
+        raise ValueError(
+            f"configs has {configs.shape[1]} columns, expected "
+            f"2 * n_orbitals = {2 * n_orbitals}"
+        )
+
+    if configs.shape[0] == 0:
+        empty_a = configs[:, :n_orbitals]
+        empty_b = configs[:, n_orbitals:]
+        return empty_a, empty_b
+
+    alpha = configs[:, :n_orbitals]
+    beta = configs[:, n_orbitals:]
+
+    unique_alpha = torch.unique(alpha, dim=0)
+    unique_beta = torch.unique(beta, dim=0)
+
+    return unique_alpha, unique_beta
+
+
+def cartesian_product_configs(
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+) -> torch.Tensor:
+    """Form all alpha-beta combinations as full configurations.
+
+    Given unique alpha strings and unique beta strings, produces the
+    Cartesian product ``{[alpha_i, beta_j] : i, j}`` as concatenated
+    configuration vectors.
+
+    Parameters
+    ----------
+    alpha : torch.Tensor
+        Alpha occupation strings, shape ``(n_alpha, n_orbitals)``.
+    beta : torch.Tensor
+        Beta occupation strings, shape ``(n_beta, n_orbitals)``.
+
+    Returns
+    -------
+    torch.Tensor
+        Cartesian product configurations, shape
+        ``(n_alpha * n_beta, 2 * n_orbitals)``.
+
+    Notes
+    -----
+    The output may contain configurations with incorrect particle
+    numbers (e.g., ``sum(alpha_i) + sum(beta_j) != N_e``).  Callers
+    should filter by particle number if the Hamiltonian requires it.
+    """
+    if alpha.ndim != 2 or beta.ndim != 2:
+        raise ValueError(
+            f"alpha and beta must be 2D; got alpha.ndim={alpha.ndim}, beta.ndim={beta.ndim}"
+        )
+    if alpha.shape[1] != beta.shape[1]:
+        raise ValueError(
+            f"alpha and beta must have same n_orbitals; "
+            f"got alpha.shape[1]={alpha.shape[1]} vs beta.shape[1]={beta.shape[1]}"
+        )
+
+    n_alpha = alpha.shape[0]
+    n_beta = beta.shape[0]
+    n_orb = alpha.shape[1]
+
+    if n_alpha == 0 or n_beta == 0:
+        ref = alpha if n_alpha > 0 else beta
+        return torch.zeros(0, 2 * n_orb, dtype=ref.dtype, device=ref.device)
+
+    if alpha.device != beta.device or alpha.dtype != beta.dtype:
+        raise ValueError(
+            f"alpha and beta must have same dtype and device; got "
+            f"alpha({alpha.dtype}, {alpha.device}) vs beta({beta.dtype}, {beta.device})"
+        )
+
+    # alpha_i repeated for each beta_j
+    alpha_expanded = alpha.repeat_interleave(n_beta, dim=0)
+    # beta_j tiled for each alpha_i
+    beta_expanded = beta.repeat(n_alpha, 1)
+
+    return torch.cat([alpha_expanded, beta_expanded], dim=1)
 
 
 def hash_config(config: torch.Tensor) -> int:
