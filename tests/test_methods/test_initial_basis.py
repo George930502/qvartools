@@ -78,12 +78,13 @@ def _make_initial_basis(n_configs=3):
     With N_ORB=2, N_ALPHA=1, N_BETA=1 there are only 4 unique configs.
     Default n_configs=3 avoids guaranteed duplicates.
     """
+    rng = np.random.default_rng(0)
     configs = []
     for _ in range(n_configs):
         alpha = np.zeros(N_ORB, dtype=np.int64)
         beta = np.zeros(N_ORB, dtype=np.int64)
-        alpha[np.random.choice(N_ORB, N_ALPHA, replace=False)] = 1
-        beta[np.random.choice(N_ORB, N_BETA, replace=False)] = 1
+        alpha[rng.choice(N_ORB, N_ALPHA, replace=False)] = 1
+        beta[rng.choice(N_ORB, N_BETA, replace=False)] = 1
         configs.append(np.concatenate([alpha, beta]))
     return torch.tensor(np.array(configs), dtype=torch.long)
 
@@ -269,3 +270,56 @@ class TestSignatureContract:
 
         sig = inspect.signature(run_hi_nqs_skqd)
         assert sig.parameters["initial_basis"].default is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Shape validation
+# ---------------------------------------------------------------------------
+
+
+class TestShapeValidation:
+    """Verify that invalid initial_basis shapes raise ValueError."""
+
+    def test_sqd_rejects_1d_tensor(self, mol_info, minimal_config_sqd):
+        """1D tensor should raise ValueError."""
+        bad_basis = torch.ones(4, dtype=torch.long)
+        with pytest.raises(ValueError, match="initial_basis must have shape"):
+            run_hi_nqs_sqd(
+                _make_fake_hamiltonian(),
+                mol_info,
+                config=minimal_config_sqd,
+                initial_basis=bad_basis,
+            )
+
+    def test_sqd_rejects_wrong_columns(self, mol_info, minimal_config_sqd):
+        """Wrong number of columns should raise ValueError."""
+        bad_basis = torch.ones(3, N_QUBITS + 1, dtype=torch.long)
+        with pytest.raises(ValueError, match="initial_basis must have shape"):
+            run_hi_nqs_sqd(
+                _make_fake_hamiltonian(),
+                mol_info,
+                config=minimal_config_sqd,
+                initial_basis=bad_basis,
+            )
+
+    def test_skqd_rejects_1d_tensor(self, mol_info, minimal_config_skqd):
+        """1D tensor should raise ValueError."""
+        bad_basis = torch.ones(4, dtype=torch.long)
+        with pytest.raises(ValueError, match="initial_basis must have shape"):
+            run_hi_nqs_skqd(
+                _make_fake_hamiltonian(),
+                mol_info,
+                config=minimal_config_skqd,
+                initial_basis=bad_basis,
+            )
+
+    def test_skqd_rejects_wrong_columns(self, mol_info, minimal_config_skqd):
+        """Wrong number of columns should raise ValueError."""
+        bad_basis = torch.ones(3, N_QUBITS + 1, dtype=torch.long)
+        with pytest.raises(ValueError, match="initial_basis must have shape"):
+            run_hi_nqs_skqd(
+                _make_fake_hamiltonian(),
+                mol_info,
+                config=minimal_config_skqd,
+                initial_basis=bad_basis,
+            )
