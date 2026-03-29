@@ -38,6 +38,9 @@ def run_cudaq_vqe(
     optimizer: str = "cobyla",
     max_iterations: int = 200,
     target: str = "nvidia",
+    nele_cas: int | None = None,
+    norb_cas: int | None = None,
+    gate_fusion: int = 4,
     verbose: bool = False,
 ) -> dict[str, Any]:
     """Run VQE or ADAPT-VQE using CUDA-QX Solvers on GPU.
@@ -64,6 +67,19 @@ def run_cudaq_vqe(
     target : str
         CUDA-Q simulator target (default ``"nvidia"`` for GPU).
         Use ``"qpp-cpu"`` for CPU-only environments.
+    nele_cas : int or None, optional
+        Number of active-space electrons.  If ``None`` (default),
+        all electrons are included.  Setting this reduces qubit count
+        and speeds up computation for large molecules.
+    norb_cas : int or None, optional
+        Number of active-space orbitals.  If ``None`` (default),
+        all orbitals are included.  Must be set together with
+        *nele_cas*.
+    gate_fusion : int
+        Maximum qubit count for gate fusion optimization (default
+        ``4``).  CUDA-Q combines consecutive gates involving up to
+        this many qubits into a single matrix operation.  Set ``0``
+        to disable.
     verbose : bool
         Print progress.
 
@@ -95,8 +111,14 @@ def run_cudaq_vqe(
     not the full-space FCI.  For small molecules with minimal basis
     (e.g. H2/sto-3g), the active space equals the full space.
     """
+    import os
+
     if method not in _VALID_METHODS:
         raise ValueError(f"method must be one of {_VALID_METHODS}, got {method!r}")
+
+    # Enable gate fusion before any cudaq import/kernel compilation
+    if gate_fusion > 0:
+        os.environ["CUDAQ_FUSION_MAX_QUBITS"] = str(gate_fusion)
 
     import cudaq
     import cudaq_solvers as solvers
@@ -107,13 +129,24 @@ def run_cudaq_vqe(
         logger.warning("Failed to set target '%s', falling back to qpp-cpu", target)
         cudaq.set_target("qpp-cpu")
 
-    molecule = solvers.create_molecule(
-        geometry=geometry,
-        basis=basis,
-        spin=spin,
-        charge=charge,
-        casci=True,
-    )
+    mol_kwargs: dict[str, Any] = {
+        "geometry": geometry,
+        "basis": basis,
+        "spin": spin,
+        "charge": charge,
+        "casci": True,
+    }
+    if nele_cas is not None and norb_cas is not None:
+        mol_kwargs["nele_cas"] = nele_cas
+        mol_kwargs["norb_cas"] = norb_cas
+        logger.info(
+            "Active space: %d electrons in %d orbitals (%d qubits)",
+            nele_cas,
+            norb_cas,
+            norb_cas * 2,
+        )
+
+    molecule = solvers.create_molecule(**mol_kwargs)
 
     n_qubits: int = molecule.n_orbitals * 2
     n_electrons: int = molecule.n_electrons
