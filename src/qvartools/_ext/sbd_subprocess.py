@@ -6,7 +6,10 @@ This will be replaced by nanobind bindings in Phase 2 (ADR-003).
 Usage::
 
     from qvartools._ext.sbd_subprocess import sbd_diagonalize
-    energy = sbd_diagonalize(integrals, alpha_strings, beta_strings)
+    energy = sbd_diagonalize(
+        h1e, h2e, n_orb, n_elec, nuclear_repulsion,
+        alpha_strings, beta_strings,
+    )
 """
 
 from __future__ import annotations
@@ -21,14 +24,12 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-# Path to compiled sbd binary (set via env var or auto-detect)
-_SBD_BINARY = os.environ.get("QVARTOOLS_SBD_BINARY", "")
-
 
 def _find_sbd_binary() -> str | None:
     """Find the sbd diag binary."""
-    if _SBD_BINARY and os.path.isfile(_SBD_BINARY):
-        return _SBD_BINARY
+    env_binary = os.environ.get("QVARTOOLS_SBD_BINARY", "")
+    if env_binary and os.path.isfile(env_binary):
+        return env_binary
     # Common locations
     for path in [
         "/tmp/sbd/apps/chemistry_tpb_selected_basis_diagonalization/diag",
@@ -145,9 +146,10 @@ def sbd_diagonalize(
         _write_bitstrings(alpha_path, alpha_strings)
         _write_bitstrings(beta_path, beta_strings)
 
-        cmd = [
-            "mpirun",
-            "--allow-run-as-root",
+        cmd = ["mpirun"]
+        if os.getuid() == 0:
+            cmd.append("--allow-run-as-root")
+        cmd += [
             "-np",
             "1",
             "-x",
@@ -184,11 +186,16 @@ def sbd_diagonalize(
                 f"sbd failed (exit {result.returncode}): {result.stderr[:500]}"
             )
 
-        # Parse energy from stdout
+        # Parse energy from stdout — match the final summary line
+        # "Sample-based diagonalization: Energy = -7.882..." or " Energy = -7.882..."
+        energy = None
         for line in result.stdout.splitlines():
             if "Energy =" in line:
                 energy_str = line.split("Energy =")[1].strip()
-                return float(energy_str)
+                energy = float(energy_str)
+        # Return the LAST "Energy =" line (final result, not intermediate)
+        if energy is not None:
+            return energy
 
         raise RuntimeError(
             f"Could not parse energy from sbd output:\n{result.stdout[:1000]}"
