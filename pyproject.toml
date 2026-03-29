@@ -109,4 +109,5 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "src/qvartools/krylov/circuits/*.py" = ["F821"]   # cudaq gate names injected at runtime
 "src/qvartools/samplers/quantum/*.py" = ["F821"]  # cudaq gate names injected at runtime
+"src/qvartools/_ext/*.py" = ["F821"]              # cudaq gate names injected at runtime
 "experiments/config_loader.py" = ["E402"]

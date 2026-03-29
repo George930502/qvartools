@@ -615,7 +615,20 @@ def get_molecule_info(name: str) -> dict[str, Any]:
         available = ", ".join(sorted(MOLECULE_REGISTRY.keys()))
         raise KeyError(f"Unknown molecule {name!r}. Available: {available}")
 
+    if key not in _MOLECULE_INFO_REGISTRY:
+        raise KeyError(
+            f"Molecule {name!r} is in MOLECULE_REGISTRY but missing from "
+            f"_MOLECULE_INFO_REGISTRY. Both registries must be kept in sync."
+        )
     return _MOLECULE_INFO_REGISTRY[key]
+
+
+# Validate registry consistency at import time
+assert set(MOLECULE_REGISTRY.keys()) == set(_MOLECULE_INFO_REGISTRY.keys()), (
+    "MOLECULE_REGISTRY and _MOLECULE_INFO_REGISTRY are out of sync: "
+    f"missing in info: {set(MOLECULE_REGISTRY) - set(_MOLECULE_INFO_REGISTRY)}, "
+    f"extra in info: {set(_MOLECULE_INFO_REGISTRY) - set(MOLECULE_REGISTRY)}"
+)
 
 
 def list_molecules() -> list[str]:

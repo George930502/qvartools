@@ -7,7 +7,7 @@ import pytest
 cudaq = pytest.importorskip("cudaq")
 cudaq_solvers = pytest.importorskip("cudaq_solvers")
 
-H2_GEOMETRY = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7474))]
+H2_GEOMETRY = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.74))]
 
 
 class TestCudaqVQE:

@@ -104,8 +104,7 @@ def run_cudaq_vqe(
     try:
         cudaq.set_target(target)
     except RuntimeError:
-        if verbose:
-            logger.warning("Failed to set target '%s', falling back to qpp-cpu", target)
+        logger.warning("Failed to set target '%s', falling back to qpp-cpu", target)
         cudaq.set_target("qpp-cpu")
 
     molecule = solvers.create_molecule(

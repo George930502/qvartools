@@ -26,8 +26,6 @@ def test_vqe_pipeline_scripts_exist() -> None:
 def test_skip_quantum_filters_vqe_pipelines() -> None:
     vqe_names = {name for _, _, name, _ in rap.PIPELINES if "VQE" in name}
     skipped = {
-        name
-        for _, _, name, _ in rap.PIPELINES
-        if "Krylov-Q" in name or "VQE" in name
+        name for _, _, name, _ in rap.PIPELINES if "Krylov-Q" in name or "VQE" in name
     }
     assert vqe_names <= skipped
