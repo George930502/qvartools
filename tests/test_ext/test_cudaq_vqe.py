@@ -7,6 +7,8 @@ import pytest
 cudaq = pytest.importorskip("cudaq")
 cudaq_solvers = pytest.importorskip("cudaq_solvers")
 
+H2_GEOMETRY = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7474))]
+
 
 class TestCudaqVQE:
     """Tests for run_cudaq_vqe."""
@@ -20,11 +22,7 @@ class TestCudaqVQE:
         """H2 VQE-UCCSD should reach chemical accuracy (< 1.6 mHa)."""
         from qvartools._ext.cudaq_vqe import run_cudaq_vqe
 
-        result = run_cudaq_vqe(
-            geometry=[("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7474))],
-            basis="sto-3g",
-            method="vqe",
-        )
+        result = run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method="vqe")
         assert result["energy"] < -1.13
         assert result["error_mha"] < 1.6
 
@@ -32,11 +30,7 @@ class TestCudaqVQE:
         """H2 ADAPT-VQE should also reach chemical accuracy."""
         from qvartools._ext.cudaq_vqe import run_cudaq_vqe
 
-        result = run_cudaq_vqe(
-            geometry=[("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7474))],
-            basis="sto-3g",
-            method="adapt-vqe",
-        )
+        result = run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method="adapt-vqe")
         assert result["energy"] < -1.13
         assert result["error_mha"] < 1.6
 
@@ -44,11 +38,7 @@ class TestCudaqVQE:
         """Result dict should have standard keys."""
         from qvartools._ext.cudaq_vqe import run_cudaq_vqe
 
-        result = run_cudaq_vqe(
-            geometry=[("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7474))],
-            basis="sto-3g",
-            method="vqe",
-        )
+        result = run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method="vqe")
         for key in [
             "energy",
             "fci_energy",
@@ -57,5 +47,31 @@ class TestCudaqVQE:
             "n_params",
             "iterations",
             "method",
+            "n_qubits",
+            "n_electrons",
+            "optimal_parameters",
+            "hf_energy",
         ]:
             assert key in result, f"Missing key: {key}"
+
+    def test_invalid_method_raises(self) -> None:
+        """Invalid method should raise ValueError."""
+        from qvartools._ext.cudaq_vqe import run_cudaq_vqe
+
+        with pytest.raises(ValueError, match="method must be one of"):
+            run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method="invalid")
+
+    def test_method_field_matches_input(self) -> None:
+        """Result method field should match the input method."""
+        from qvartools._ext.cudaq_vqe import run_cudaq_vqe
+
+        for method in ["vqe", "adapt-vqe"]:
+            result = run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method=method)
+            assert result["method"] == method
+
+    def test_vqe_energy_below_hf(self) -> None:
+        """VQE energy should be lower than HF energy (variational principle)."""
+        from qvartools._ext.cudaq_vqe import run_cudaq_vqe
+
+        result = run_cudaq_vqe(geometry=H2_GEOMETRY, basis="sto-3g", method="vqe")
+        assert result["energy"] < result["hf_energy"]
