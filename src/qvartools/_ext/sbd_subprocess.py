@@ -141,6 +141,21 @@ def sbd_diagonalize(
     float
         Ground state energy (electronic + nuclear repulsion).
     """
+    # --- Input validation ---
+    h1e = np.asarray(h1e)
+    h2e = np.asarray(h2e)
+    if h1e.ndim != 2 or h1e.shape != (n_orb, n_orb):
+        raise ValueError(f"h1e must have shape ({n_orb}, {n_orb}), got {h1e.shape}")
+    if h2e.ndim != 4 or h2e.shape != (n_orb, n_orb, n_orb, n_orb):
+        raise ValueError(
+            f"h2e must have shape ({n_orb}, {n_orb}, {n_orb}, {n_orb}), got {h2e.shape}"
+        )
+    for name, arr in [("alpha_strings", alpha_strings), ("beta_strings", beta_strings)]:
+        if arr.ndim != 2 or arr.shape[1] != n_orb:
+            raise ValueError(
+                f"{name} must have shape (n_strings, {n_orb}), got {tuple(arr.shape)}"
+            )
+
     binary = _find_sbd_binary()
     if binary is None:
         raise RuntimeError(
