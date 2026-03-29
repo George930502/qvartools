@@ -281,7 +281,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-quantum",
         action="store_true",
-        help="Skip quantum Krylov pipelines (no CUDA-Q needed)",
+        help="Skip CUDA-Q-dependent pipelines (quantum Krylov and VQE)",
     )
     parser.add_argument(
         "--skip-iterative",
@@ -320,7 +320,7 @@ def main() -> None:
 
         if args.only and group_num not in args.only:
             continue
-        if args.skip_quantum and "Krylov-Q" in name:
+        if args.skip_quantum and ("Krylov-Q" in name or group == "09_vqe"):
             continue
         if args.skip_iterative and group.startswith(("06", "07", "08")):
             continue

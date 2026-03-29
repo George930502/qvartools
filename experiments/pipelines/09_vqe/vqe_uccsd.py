@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from config_loader import create_base_parser, load_config
 
 from qvartools._ext.cudaq_vqe import run_cudaq_vqe
-from qvartools.molecules import get_molecule
+from qvartools.molecules import get_molecule_info
 
 CHEMICAL_ACCURACY_MHA = 1.6
 
@@ -43,7 +43,7 @@ def main() -> None:
     parser.add_argument("--verbose", action="store_true", default=None)
     _, config = load_config(parser)
 
-    _, mol_info = get_molecule(config.get("molecule", "h2"))
+    mol_info = get_molecule_info(config.get("molecule", "h2"))
 
     result = run_cudaq_vqe(
         geometry=mol_info["geometry"],
