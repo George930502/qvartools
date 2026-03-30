@@ -845,6 +845,11 @@ class MolecularHamiltonian(Hamiltonian):
             Hermitian sparse matrix of shape ``(n_configs, n_configs)``,
             dtype ``float64``.
 
+        Raises
+        ------
+        ValueError
+            If ``configs`` is empty (zero rows).
+
         Examples
         --------
         >>> H_sp = hamiltonian.build_sparse_hamiltonian(configs)

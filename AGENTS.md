@@ -721,7 +721,7 @@ Many modules guard optional imports with try/except and raise `ImportError` with
 
 ### Dense Matrix Guard
 
-`matrix_elements_fast()` refuses to build matrices for >10,000 configurations (raises `MemoryError`). Use sparse methods or Davidson solver for larger systems.
+`matrix_elements_fast()` refuses to build matrices for >50,000 configurations (raises `MemoryError`). Use `build_sparse_hamiltonian()` or Davidson solver for larger systems.
 
 ---
 

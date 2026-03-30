@@ -10,6 +10,7 @@ for larger ones, and CuPy sparse eigsh if available.
 from __future__ import annotations
 
 import logging
+import math
 import warnings
 from typing import Any
 
@@ -141,6 +142,9 @@ def gpu_solve_fermion(
             E0, v0 = _dense_diag(H_np)
         else:
             E0, v0 = _iterative_diag(H_np)
+
+    if not math.isfinite(E0):
+        raise RuntimeError(f"Non-finite eigenvalue {E0} from diagonalization")
 
     occ = compute_occupancies(configs.numpy(), v0, n_orb)
     return E0, v0, occ
