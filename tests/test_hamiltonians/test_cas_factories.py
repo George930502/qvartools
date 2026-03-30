@@ -61,17 +61,18 @@ class TestCr2Factory:
         """Cr₂ CASSCF must converge to singlet, not septet.
 
         Without fix_spin_(ss=0), CASSCF converges to septet (S=3).
-        The singlet energy should be HIGHER than septet but is the
-        physically correct ground state for the sextuple bond.
-        We verify the energy is below RHF energy (correlation recovered).
+        Singlet e_core ≈ -2035.4 Ha.  If fix_spin_ is removed, the
+        CASSCF converges to a different state with different e_core.
         """
         from qvartools.molecules.registry import get_molecule
 
         ham, info = get_molecule("Cr2", device="cpu")
-        # CAS energy (via diagonal of HF config) should be well below zero
-        # Cr₂ STO-3G CAS(12,12) singlet: ~ -2085 to -2086 Ha
-        assert ham.integrals.nuclear_repulsion < 0.0, (
-            "nuclear_repulsion should be e_core (negative) for CAS"
+        e_core = ham.integrals.nuclear_repulsion
+        # Singlet e_core for Cr₂ STO-3G CAS(12,12) is ~-2035.4 Ha.
+        # Septet would give a substantially different value.
+        assert -2040.0 < e_core < -2030.0, (
+            f"e_core={e_core:.4f} outside singlet range [-2040, -2030]. "
+            f"CASSCF may have converged to septet (fix_spin_ missing?)."
         )
 
 

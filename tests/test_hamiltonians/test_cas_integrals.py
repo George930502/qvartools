@@ -205,3 +205,21 @@ class TestCacheBypassForCAS:
         )
         assert isinstance(mi, MolecularIntegrals)
         assert mi.n_orbitals == 8
+
+    def test_cache_actually_bypassed_for_cas(self):
+        """Verify joblib cached function is NOT called when cas is set."""
+        from unittest.mock import patch
+
+        with patch(
+            "qvartools.hamiltonians.integrals.compute_molecular_integrals",
+            wraps=compute_molecular_integrals,
+        ) as mock_fn:
+            cached_compute_molecular_integrals(
+                N2_GEOMETRY, basis="cc-pvdz", cas=(10, 8)
+            )
+            # The raw compute_molecular_integrals must be called directly,
+            # not through the joblib wrapper
+            assert mock_fn.called, (
+                "compute_molecular_integrals was not called directly — "
+                "CAS may have been routed through joblib cache"
+            )

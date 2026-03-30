@@ -271,15 +271,9 @@ def _compute_cas_integrals(
     from pyscf import ao2mo, fci, mcscf
 
     nelecas, ncas = cas
-
-    # Determine active electron counts
-    if isinstance(nelecas, (tuple, list)):
-        n_alpha_cas, n_beta_cas = nelecas[0], nelecas[1]
-        n_elec_cas = sum(nelecas)
-    else:
-        n_elec_cas = nelecas
-        n_alpha_cas = (nelecas + spin) // 2
-        n_beta_cas = (nelecas - spin) // 2
+    n_elec_cas = nelecas
+    n_alpha_cas = (nelecas + spin) // 2
+    n_beta_cas = (nelecas - spin) // 2
 
     # Validate active electron / orbital counts
     if n_alpha_cas < 0 or n_beta_cas < 0:
@@ -391,9 +385,24 @@ def get_integral_cache(
 
     location = cache_dir if cache_dir is not None else _DEFAULT_CACHE_DIR
     memory = Memory(location, verbose=0)
-    cached_fn = memory.cache(compute_molecular_integrals)
+    _joblib_cached = memory.cache(compute_molecular_integrals)
     logger.info("Integral cache enabled at %s", location)
-    return cached_fn
+
+    def _cas_aware_cached(
+        geometry: list[tuple[str, tuple[float, float, float]]],
+        basis: str = "sto-3g",
+        charge: int = 0,
+        spin: int = 0,
+        cas: tuple[int, int] | None = None,
+        casci: bool = False,
+    ) -> MolecularIntegrals:
+        if cas is not None:
+            return compute_molecular_integrals(
+                geometry, basis=basis, charge=charge, spin=spin, cas=cas, casci=casci
+            )
+        return _joblib_cached(geometry, basis=basis, charge=charge, spin=spin)
+
+    return _cas_aware_cached
 
 
 # Module-level default cached function (lazy init)
