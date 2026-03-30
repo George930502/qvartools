@@ -59,27 +59,56 @@ def _write_fcidump(
     nuclear_repulsion: float,
     ms2: int = 0,
 ) -> None:
-    """Write molecular integrals in FCIDUMP format."""
+    """Write molecular integrals in FCIDUMP format.
+
+    Uses ``pyscf.tools.fcidump`` when available (fastest, handles all
+    symmetry reduction internally).  Falls back to a vectorised numpy
+    implementation that avoids the O(n⁴) Python loop.
+    """
+    try:
+        from pyscf.tools import fcidump as pyscf_fcidump
+
+        pyscf_fcidump.from_integrals(
+            path, h1e, h2e, n_orb, n_elec, nuc=nuclear_repulsion, ms=ms2
+        )
+        return
+    except ImportError:
+        pass
+
+    # Vectorised fallback: generate all symmetry-reduced index pairs at once
     with open(path, "w") as f:
         f.write(f" &FCI NORB={n_orb:3d},NELEC={n_elec},MS2={ms2},\n")
         f.write("  ORBSYM=" + ",".join(["1"] * n_orb) + ",\n")
         f.write("  ISYM=1,\n")
         f.write(" &END\n")
-        for p in range(n_orb):
-            for q in range(p + 1):
-                for r in range(n_orb):
-                    for s in range(r + 1):
-                        if (p * (p + 1) // 2 + q) >= (r * (r + 1) // 2 + s):
-                            val = h2e[p, q, r, s]
-                            if abs(val) > 1e-12:
-                                f.write(
-                                    f"{val:23.16e} {p + 1:4d} {q + 1:4d} {r + 1:4d} {s + 1:4d}\n"
-                                )
-        for p in range(n_orb):
-            for q in range(p + 1):
-                val = h1e[p, q]
-                if abs(val) > 1e-12:
-                    f.write(f"{val:23.16e} {p + 1:4d} {q + 1:4d} {0:4d} {0:4d}\n")
+
+        # Two-electron integrals: (p,q) with q<=p, (r,s) with s<=r, pq>=rs
+        pq_p, pq_q = np.tril_indices(n_orb)
+        pq_idx = pq_p * (pq_p + 1) // 2 + pq_q
+        n_pairs = len(pq_p)
+
+        pq_all = np.repeat(np.arange(n_pairs), n_pairs)
+        rs_all = np.tile(np.arange(n_pairs), n_pairs)
+        mask = pq_idx[pq_all] >= pq_idx[rs_all]
+        pq_sel, rs_sel = pq_all[mask], rs_all[mask]
+
+        p, q = pq_p[pq_sel], pq_q[pq_sel]
+        r, s = pq_p[rs_sel], pq_q[rs_sel]
+        vals = h2e[p, q, r, s]
+
+        nz = np.abs(vals) > 1e-12
+        for v, pi, qi, ri, si in zip(
+            vals[nz], p[nz] + 1, q[nz] + 1, r[nz] + 1, s[nz] + 1
+        ):
+            f.write(f"{v:23.16e} {pi:4d} {qi:4d} {ri:4d} {si:4d}\n")
+
+        # One-electron integrals: q<=p
+        h1_p, h1_q = np.tril_indices(n_orb)
+        h1_vals = h1e[h1_p, h1_q]
+        h1_nz = np.abs(h1_vals) > 1e-12
+        for v, pi, qi in zip(h1_vals[h1_nz], h1_p[h1_nz] + 1, h1_q[h1_nz] + 1):
+            f.write(f"{v:23.16e} {pi:4d} {qi:4d} {0:4d} {0:4d}\n")
+
         f.write(f"{nuclear_repulsion:23.16e} {0:4d} {0:4d} {0:4d} {0:4d}\n")
 
 
