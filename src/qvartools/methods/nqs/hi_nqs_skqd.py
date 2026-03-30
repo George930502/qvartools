@@ -287,6 +287,8 @@ def run_hi_nqs_skqd(
                 f"initial_basis must have shape (n_configs, {n_qubits}), "
                 f"but got {tuple(cumulative_basis.shape)}"
             )
+        if not torch.all((cumulative_basis == 0) | (cumulative_basis == 1)):
+            raise ValueError("initial_basis must contain only binary values {0, 1}")
         cumulative_basis = torch.unique(cumulative_basis, dim=0)
         logger.info(
             "Warm-starting with %d initial basis configs", cumulative_basis.shape[0]
