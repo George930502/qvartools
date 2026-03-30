@@ -256,7 +256,6 @@ class FCISolver(Solver):
             )
 
         try:
-            from pyscf import ao2mo
             from pyscf import fci as pyscf_fci
         except ImportError:
             logger.info("PySCF not available; cannot run CAS FCI.")
@@ -273,17 +272,15 @@ class FCISolver(Solver):
         h2e = integrals.h2e
         e_core = integrals.nuclear_repulsion
 
-        # Convert full 4-index h2e to compressed 2-index form for PySCF
-        h2e_flat = h2e.reshape(n_orb * n_orb, n_orb * n_orb)
-        eri = ao2mo.restore(4, h2e_flat, n_orb)
-
         cisolver = pyscf_fci.direct_spin1.FCI()
         cisolver.conv_tol = 1e-12
         cisolver.max_cycle = 300
         cisolver.verbose = 0
 
+        # h2e is already in 4-index (n_orb, n_orb, n_orb, n_orb) form;
+        # PySCF's FCI kernel accepts this directly.
         nelec = (n_alpha, n_beta)
-        e_fci, ci_vec = cisolver.kernel(h1e, eri, n_orb, nelec)
+        e_fci, ci_vec = cisolver.kernel(h1e, h2e, n_orb, nelec)
         e_fci += e_core
 
         if not math.isfinite(e_fci):
@@ -293,6 +290,7 @@ class FCISolver(Solver):
             logger.warning(
                 "CAS FCI did not converge (max_cycle=%d)", cisolver.max_cycle
             )
+            return None, 0, False, {"reason": "cas_fci_not_converged"}
 
         metadata: dict[str, Any] = {
             "cas_fci": True,

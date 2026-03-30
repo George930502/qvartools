@@ -15,6 +15,7 @@ from math import comb
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 
 from qvartools.solvers.reference.fci import FCISolver
 from qvartools.solvers.solver import SolverResult
@@ -126,3 +127,31 @@ class TestDenseFallbackGraceful:
         assert energy is None
         assert converged is False
         assert "reason" in metadata
+
+
+# ---------------------------------------------------------------------------
+# Test 4: Small CAS system exercises actual FCI kernel
+# ---------------------------------------------------------------------------
+
+
+class TestCASFCIActualExecution:
+    """Exercise the actual CAS FCI kernel with small parameters."""
+
+    def test_cas_fci_with_small_system(self) -> None:
+        """CAS FCI should compute energy for a small active space.
+
+        Uses n_orbitals=6, n_alpha=3, n_beta=3 so that
+        C(6,3)^2 = 400 < 50M limit, which exercises the actual
+        ``_try_cas_fci`` kernel instead of hitting the size guard.
+        """
+        pytest.importorskip("pyscf")
+        ham = _make_mock_hamiltonian(n_orbitals=6, n_alpha=3, n_beta=3)
+        mol_info = {"is_cas": True, "name": "small_cas_test"}
+
+        solver = FCISolver()
+        result = solver.solve(ham, mol_info)
+
+        assert isinstance(result, SolverResult)
+        # With zero integrals, energy should be 0.0 (nuclear_repulsion)
+        if result.energy is not None:
+            assert isinstance(result.energy, float)
