@@ -260,6 +260,7 @@ qvartools/
 │   │   └── registry.py           # MOLECULE_REGISTRY (12 molecules), get_molecule, list_molecules
 │   │
 │   ├── _ext/                     # Experimental GPU extensions
+│   │   ├── __init__.py
 │   │   ├── sbd_subprocess.py     # sbd_diagonalize, sbd_available (ADR-003 Phase 1)
 │   │   └── cudaq_vqe.py          # run_cudaq_vqe (CUDA-QX VQE + ADAPT-VQE wrapper)
 │   │
@@ -554,6 +555,8 @@ pytest --cov=qvartools --cov-report=term-missing
 | `test_krylov/` | SKQD, basis sampler, residual/selected-CI expansion | `pyscf` |
 | `test_diag/` | Eigensolvers, diversity selection | — |
 | `test_solvers/` | Solver ABC, SolverResult | — |
+| `test_methods/` | initial_basis warm-start, shape validation | — |
+| `test_ext/` | sbd subprocess, CUDA-QX VQE wrappers | `gpu`, `slow` |
 | `test_utils/` | Format utils, connection cache | — |
 | `test_integration/` | Full H2/BeH2/spin pipelines | `pyscf` |
 
@@ -728,6 +731,18 @@ Many modules guard optional imports with try/except and raise `ImportError` with
 ### Dense Matrix Guard
 
 `matrix_elements_fast()` refuses to build matrices for >10,000 configurations (raises `MemoryError`). Use sparse methods or Davidson solver for larger systems.
+
+### GPU Extensions (`_ext/`)
+
+The `_ext/` subpackage is **experimental and optional**. `sbd_subprocess` requires the `sbd` binary compiled from r-ccs-cms/sbd + MPI runtime. `cudaq_vqe` requires CUDA-Q >= 0.14 and CUDA-QX Solvers >= 0.5. Both import-guard gracefully when deps are missing.
+
+### Initial Basis Warm-Start
+
+`run_hi_nqs_sqd()` and `run_hi_nqs_skqd()` accept `initial_basis: torch.Tensor | None = None` (keyword-only). The tensor must be 2D with shape `(n_configs, n_qubits)` — a `ValueError` is raised otherwise. Duplicates are automatically removed via `torch.unique`.
+
+### SQD Cartesian Product Expansion
+
+When `SQDConfig.use_cartesian_product=True` (default), SQD splits sampled configs into alpha/beta spin strings via `split_spin_strings()`, then enumerates all alpha×beta pairs via `cartesian_product_configs()`. This dramatically improves basis coverage for molecular Hamiltonians.
 
 ---
 
