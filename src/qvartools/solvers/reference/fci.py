@@ -17,6 +17,7 @@ hang on large systems.
 from __future__ import annotations
 
 import logging
+import math
 import time
 from math import comb
 from typing import Any
@@ -284,6 +285,14 @@ class FCISolver(Solver):
         nelec = (n_alpha, n_beta)
         e_fci, ci_vec = cisolver.kernel(h1e, eri, n_orb, nelec)
         e_fci += e_core
+
+        if not math.isfinite(e_fci):
+            logger.warning("CAS FCI returned non-finite energy: %s", e_fci)
+            return None, 0, False, {"reason": "non_finite_cas_fci"}
+        if hasattr(cisolver, "converged") and not cisolver.converged:
+            logger.warning(
+                "CAS FCI did not converge (max_cycle=%d)", cisolver.max_cycle
+            )
 
         metadata: dict[str, Any] = {
             "cas_fci": True,
