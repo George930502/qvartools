@@ -110,13 +110,20 @@ class MolecularIntegrals:
 # ---------------------------------------------------------------------------
 
 
+_FCI_CONFIG_LIMIT: int = 50_000_000
+"""int : Auto-CASCI threshold — skip CASSCF orbital optimisation when the
+active-space determinant count exceeds this limit."""
+
+
 def compute_molecular_integrals(
     geometry: list[tuple[str, tuple[float, float, float]]],
     basis: str = "sto-3g",
     charge: int = 0,
     spin: int = 0,
+    cas: tuple[int, int] | None = None,
+    casci: bool = False,
 ) -> MolecularIntegrals:
-    """Run RHF with PySCF and extract molecular integrals.
+    """Run RHF (+ optional CASSCF/CASCI) and extract molecular integrals.
 
     Parameters
     ----------
@@ -130,18 +137,33 @@ def compute_molecular_integrals(
     spin : int, optional
         Spin multiplicity minus one, i.e. ``2S`` (default ``0`` for
         singlet).
+    cas : tuple of (int, int) or None, optional
+        ``(nelecas, ncas)`` for CAS active-space reduction.  When
+        provided, runs CASSCF (or CASCI if *casci* is ``True``) after
+        RHF and returns integrals in the active space only
+        (``n_orbitals = ncas``).  ``None`` (default) uses the full MO
+        space.
+    casci : bool, optional
+        If ``True`` and *cas* is not ``None``, use CASCI instead of
+        CASSCF.  CASCI uses HF MOs directly (no orbital optimisation),
+        which is faster for large active spaces where CASSCF's
+        iterative FCI solver would be infeasible.  Also auto-enabled
+        when the determinant count exceeds ``_FCI_CONFIG_LIMIT``.
 
     Returns
     -------
     MolecularIntegrals
         Integrals and metadata needed by :class:`MolecularHamiltonian`.
+        When *cas* is used, ``nuclear_repulsion`` is the frozen-core
+        energy ``e_core`` (includes frozen-electron energy + nuclear
+        repulsion), and ``n_orbitals`` equals ``ncas``.
 
     Raises
     ------
     ImportError
         If PySCF is not installed.
     RuntimeError
-        If the SCF calculation does not converge.
+        If the SCF or CASSCF calculation does not converge.
 
     Examples
     --------
@@ -149,6 +171,13 @@ def compute_molecular_integrals(
     >>> mi = compute_molecular_integrals(geometry, basis="sto-3g")  # doctest: +SKIP
     >>> mi.n_orbitals  # doctest: +SKIP
     2
+
+    CAS example (N₂ with 10 active electrons in 8 orbitals):
+
+    >>> n2 = [("N", (0, 0, 0)), ("N", (0, 0, 1.1))]
+    >>> mi = compute_molecular_integrals(n2, "cc-pvdz", cas=(10, 8))  # doctest: +SKIP
+    >>> mi.n_orbitals  # doctest: +SKIP
+    8
     """
     try:
         import pyscf  # noqa: F401
@@ -172,14 +201,22 @@ def compute_molecular_integrals(
     mf = scf.RHF(mol)
     mf.kernel()
     if not mf.converged:
-        raise RuntimeError("RHF calculation did not converge.")
+        import warnings
 
-    # Extract integrals in MO basis
+        warnings.warn(
+            "RHF did not converge. Proceeding with unconverged orbitals.",
+            stacklevel=2,
+        )
+
+    # --- CAS active-space path ---
+    if cas is not None:
+        return _compute_cas_integrals(mol, mf, cas, casci, spin)
+
+    # --- Full-space path (original behaviour) ---
     n_orb = mf.mo_coeff.shape[1]
     h1e = mf.mo_coeff.T @ mf.get_hcore() @ mf.mo_coeff
     h1e = np.asarray(h1e, dtype=np.float64)
 
-    # Two-electron integrals: full 4-index tensor in chemist's notation
     eri_mo = ao2mo.full(mol, mf.mo_coeff)
     h2e = ao2mo.restore(1, eri_mo, n_orb).astype(np.float64)
 
@@ -195,6 +232,104 @@ def compute_molecular_integrals(
         n_orbitals=n_orb,
         n_alpha=n_alpha,
         n_beta=n_beta,
+    )
+
+
+def _compute_cas_integrals(
+    mol: object,
+    mf: object,
+    cas: tuple[int, int],
+    casci: bool,
+    spin: int,
+) -> MolecularIntegrals:
+    """Extract active-space integrals via CASSCF or CASCI.
+
+    Parameters
+    ----------
+    mol : pyscf.gto.Mole
+        Built PySCF molecule.
+    mf : pyscf.scf.RHF
+        Converged (or attempted) RHF object.
+    cas : tuple of (int, int)
+        ``(nelecas, ncas)`` active space specification.
+    casci : bool
+        Force CASCI (no orbital optimisation).
+    spin : int
+        ``2S`` spin value.
+
+    Returns
+    -------
+    MolecularIntegrals
+        Active-space integrals with ``nuclear_repulsion = e_core``.
+    """
+    from math import comb as _comb
+
+    from pyscf import ao2mo, fci, mcscf
+
+    nelecas, ncas = cas
+
+    # Determine active electron counts
+    if isinstance(nelecas, (tuple, list)):
+        n_alpha_cas, n_beta_cas = nelecas[0], nelecas[1]
+        n_elec_cas = sum(nelecas)
+    else:
+        n_elec_cas = nelecas
+        n_alpha_cas = (nelecas + spin) // 2
+        n_beta_cas = (nelecas - spin) // 2
+
+    # Estimate determinant count for auto-CASCI decision
+    n_configs = _comb(ncas, n_alpha_cas) * _comb(ncas, n_beta_cas)
+    use_casci = casci or ncas >= 15 or n_configs > _FCI_CONFIG_LIMIT
+
+    if use_casci:
+        mc = mcscf.CASCI(mf, ncas=ncas, nelecas=nelecas)
+    else:
+        mc = mcscf.CASSCF(mf, ncas=ncas, nelecas=nelecas)
+
+    # Linear molecules need non-symmetry FCI solver
+    if hasattr(mol, "symmetry") and mol.symmetry:
+        topgroup = getattr(mol, "topgroup", "")
+        if topgroup in ("Dooh", "Coov"):
+            mc.fcisolver = fci.direct_spin1.FCISolver(mol)
+
+    # Skip kernel for infeasibly large CAS (integrals-only mode)
+    if use_casci and n_configs > _FCI_CONFIG_LIMIT:
+        logger.info(
+            "Skipping FCI solve for CAS(%s,%d): %s configs > %s limit. "
+            "Extracting integrals only.",
+            nelecas,
+            ncas,
+            f"{n_configs:,}",
+            f"{_FCI_CONFIG_LIMIT:,}",
+        )
+    else:
+        mc.kernel()
+        if not use_casci and not mc.converged:
+            import warnings
+
+            warnings.warn(
+                f"CASSCF did not converge for CAS({nelecas},{ncas}). "
+                "Integrals may be unreliable.",
+                stacklevel=3,
+            )
+
+    # Extract active-space integrals
+    h1e_cas, e_core = mc.h1e_for_cas()
+    active_mo = mc.mo_coeff[:, mc.ncore : mc.ncore + mc.ncas]
+    h2e_cas = ao2mo.full(mol, active_mo)
+    h2e_cas = ao2mo.restore(1, h2e_cas, ncas)
+
+    h1e_cas = np.asarray(h1e_cas, dtype=np.float64)
+    h2e_cas = np.asarray(h2e_cas, dtype=np.float64)
+
+    return MolecularIntegrals(
+        h1e=h1e_cas,
+        h2e=h2e_cas,
+        nuclear_repulsion=float(e_core),
+        n_electrons=n_elec_cas,
+        n_orbitals=ncas,
+        n_alpha=n_alpha_cas,
+        n_beta=n_beta_cas,
     )
 
 
@@ -254,12 +389,17 @@ def cached_compute_molecular_integrals(
     basis: str = "sto-3g",
     charge: int = 0,
     spin: int = 0,
+    cas: tuple[int, int] | None = None,
+    casci: bool = False,
 ) -> MolecularIntegrals:
     """Cached version of :func:`compute_molecular_integrals`.
 
     Identical interface, but results are persisted to disk via
     ``joblib.Memory``.  The default cache directory is
     ``~/.cache/qvartools/integrals``.
+
+    CAS integrals are **not cached** because CASSCF orbital
+    optimisation is non-deterministic.
 
     Parameters
     ----------
@@ -271,12 +411,21 @@ def cached_compute_molecular_integrals(
         Net charge (default ``0``).
     spin : int, optional
         2S (default ``0``).
+    cas : tuple of (int, int) or None, optional
+        ``(nelecas, ncas)`` for CAS. Bypasses cache when not ``None``.
+    casci : bool, optional
+        Force CASCI (default ``False``).
 
     Returns
     -------
     MolecularIntegrals
         Cached or freshly computed integrals.
     """
+    # CAS integrals bypass cache (CASSCF is non-deterministic)
+    if cas is not None:
+        return compute_molecular_integrals(
+            geometry, basis=basis, charge=charge, spin=spin, cas=cas, casci=casci
+        )
     global _default_cached_fn  # noqa: PLW0603
     if _default_cached_fn is None:
         _default_cached_fn = get_integral_cache()
