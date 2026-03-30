@@ -406,14 +406,22 @@ def main() -> None:
         best = min(ok_results, key=lambda r: r["energy"])
         fastest = min(ok_results, key=lambda r: r["wall_time"] or float("inf"))
         n_chem_acc = sum(
-            1 for r in ok_results if abs(r["error_mha"] or 999) < CHEMICAL_ACCURACY_MHA
+            1
+            for r in ok_results
+            if r["error_mha"] is not None
+            and abs(r["error_mha"]) < CHEMICAL_ACCURACY_MHA
         )
 
         print(f"\n  Completed: {len(ok_results)}/{len(results)}")
         print(f"  Chemical accuracy: {n_chem_acc}/{len(ok_results)}")
-        print(
-            f"  Best energy: {best['name']} ({best['energy']:.10f} Ha, {best['error_mha']:.4f} mHa)"
-        )
+        if best["error_mha"] is not None:
+            print(
+                f"  Best energy: {best['name']} ({best['energy']:.10f} Ha, {best['error_mha']:.4f} mHa)"
+            )
+        else:
+            print(
+                f"  Best energy: {best['name']} ({best['energy']:.10f} Ha, error: N/A)"
+            )
         print(f"  Fastest: {fastest['name']} ({fastest['wall_time']:.1f}s)")
 
     failed = [r for r in results if r["status"] != "OK"]

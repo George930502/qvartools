@@ -82,9 +82,12 @@ class FCISolver(Solver):
         hamiltonian : Hamiltonian
             The molecular Hamiltonian.
         mol_info : dict
-            Molecular metadata (must contain ``"name"``).  If
-            ``"is_cas"`` is ``True``, uses active-space integrals
-            directly instead of rebuilding the full molecule.
+            Molecular metadata.  For the PySCF path (non-CAS molecules),
+            must contain ``"geometry"`` (list of ``(atom, coord)`` tuples)
+            and ``"basis"`` (str); optionally ``"charge"`` and ``"spin"``.
+            For CAS molecules (``"is_cas"`` is ``True``), uses active-space
+            integrals from the Hamiltonian directly.  The ``"name"`` key is
+            used only for logging.
 
         Returns
         -------
@@ -252,6 +255,7 @@ class FCISolver(Solver):
             )
 
         try:
+            from pyscf import ao2mo
             from pyscf import fci as pyscf_fci
         except ImportError:
             logger.info("PySCF not available; cannot run CAS FCI.")
@@ -261,7 +265,6 @@ class FCISolver(Solver):
                 False,
                 {
                     "reason": "pyscf_unavailable",
-                    "_skip_dense_fallback": True,
                 },
             )
 
@@ -269,9 +272,17 @@ class FCISolver(Solver):
         h2e = integrals.h2e
         e_core = integrals.nuclear_repulsion
 
+        # Convert full 4-index h2e to compressed 2-index form for PySCF
+        h2e_flat = h2e.reshape(n_orb * n_orb, n_orb * n_orb)
+        eri = ao2mo.restore(4, h2e_flat, n_orb)
+
         cisolver = pyscf_fci.direct_spin1.FCI()
-        n_electrons = n_alpha + n_beta
-        e_fci, ci_vec = cisolver.kernel(h1e, h2e, n_orb, n_electrons)
+        cisolver.conv_tol = 1e-12
+        cisolver.max_cycle = 300
+        cisolver.verbose = 0
+
+        nelec = (n_alpha, n_beta)
+        e_fci, ci_vec = cisolver.kernel(h1e, eri, n_orb, nelec)
         e_fci += e_core
 
         metadata: dict[str, Any] = {
@@ -282,9 +293,10 @@ class FCISolver(Solver):
         }
 
         logger.info(
-            "CAS FCI: n_orb=%d, n_el=%d, dim=%d, energy=%.10f",
+            "CAS FCI: n_orb=%d, nelec=(%d, %d), dim=%d, energy=%.10f",
             n_orb,
-            n_electrons,
+            n_alpha,
+            n_beta,
             diag_dim,
             e_fci,
         )

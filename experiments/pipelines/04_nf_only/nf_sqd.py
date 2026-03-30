@@ -157,14 +157,17 @@ def main() -> None:
     )
     error_mha = (
         (final_energy - exact_energy) * 1000.0
-        if (final_energy and exact_energy is not None)
+        if (final_energy is not None and exact_energy is not None)
         else None
     )
 
     print(f"\n{'=' * 60}")
     print("NF-ONLY + SQD RESULTS")
     print(f"{'=' * 60}")
-    print(f"Final energy : {final_energy:.10f} Ha")
+    if final_energy is not None:
+        print(f"Final energy : {final_energy:.10f} Ha")
+    else:
+        print("Final energy : N/A")
     if exact_energy is not None:
         print(f"Exact energy : {exact_energy:.10f} Ha")
     else:
