@@ -162,8 +162,12 @@ def compute_molecular_integrals(
     ------
     ImportError
         If PySCF is not installed.
-    RuntimeError
-        If the SCF or CASSCF calculation does not converge.
+
+    Warns
+    -----
+    UserWarning
+        If the RHF or CASSCF calculation does not converge (proceeds
+        with unconverged orbitals).
 
     Examples
     --------
@@ -276,6 +280,18 @@ def _compute_cas_integrals(
         n_elec_cas = nelecas
         n_alpha_cas = (nelecas + spin) // 2
         n_beta_cas = (nelecas - spin) // 2
+
+    # Validate active electron / orbital counts
+    if n_alpha_cas < 0 or n_beta_cas < 0:
+        raise ValueError(
+            f"Invalid CAS electron counts: n_alpha={n_alpha_cas}, "
+            f"n_beta={n_beta_cas} (from nelecas={nelecas}, spin={spin})"
+        )
+    if n_alpha_cas > ncas or n_beta_cas > ncas:
+        raise ValueError(
+            f"CAS electrons exceed orbitals: n_alpha={n_alpha_cas}, "
+            f"n_beta={n_beta_cas}, ncas={ncas}"
+        )
 
     # Estimate determinant count for auto-CASCI decision
     n_configs = _comb(ncas, n_alpha_cas) * _comb(ncas, n_beta_cas)

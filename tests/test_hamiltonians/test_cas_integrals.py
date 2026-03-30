@@ -123,7 +123,9 @@ class TestN2CAS10_8:
 
     def test_valid_config_count(self, integrals: MolecularIntegrals):
         """Hilbert space dim = C(ncas, n_alpha) * C(ncas, n_beta)."""
-        expected = comb(8, 5) * comb(8, 5)
+        expected = comb(integrals.n_orbitals, integrals.n_alpha) * comb(
+            integrals.n_orbitals, integrals.n_beta
+        )
         assert expected == 3136
 
 
@@ -188,7 +190,7 @@ class TestCASCIFallback:
 
 @pytest.mark.pyscf
 @pytest.mark.slow
-class TestCacheBypasForCAS:
+class TestCacheBypassForCAS:
     """joblib cache must NOT cache CAS results (CASSCF is non-deterministic)."""
 
     def test_cached_fn_accepts_cas_param(self):

@@ -137,7 +137,5 @@ class TestCASRegistryCompleteness:
         from qvartools.molecules.registry import MOLECULE_REGISTRY
 
         for name, entry in MOLECULE_REGISTRY.items():
-            if "CAS" in name or name in ("Cr2", "Benzene"):
-                assert "is_cas" in entry or entry.get("is_cas") is not None, (
-                    f"{name} missing is_cas flag"
-                )
+            if "cas" in name or name in ("cr2", "benzene"):
+                assert entry.get("is_cas") is True, f"{name} missing is_cas=True"

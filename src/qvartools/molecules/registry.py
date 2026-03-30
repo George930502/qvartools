@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from qvartools.hamiltonians.integrals import _FCI_CONFIG_LIMIT
 from qvartools.hamiltonians.molecular import (
     MolecularHamiltonian,
     compute_molecular_integrals,
@@ -392,6 +393,8 @@ def _make_h2s(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]
 # CAS molecule geometries
 # ---------------------------------------------------------------------------
 
+# N₂ CAS uses 1.10 Å bond length (standard for CAS benchmarks in Flow-Guided-Krylov),
+# distinct from the full-space N₂ which uses 1.0977 Å (NIST equilibrium).
 _N2_CAS_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
     ("N", (0.0, 0.0, 0.0)),
     ("N", (0.0, 0.0, 1.10)),
@@ -470,12 +473,17 @@ def _make_cr2(
         mf = scf.ROHF(mol)
         mf.max_cycle = 300
         mf.kernel()
+        if not mf.converged:
+            warnings.warn(
+                "ROHF also did not converge for Cr₂. Results may be unreliable.",
+                stacklevel=2,
+            )
 
     # Estimate config count for auto-CASCI
     n_alpha_cas = nelecas // 2
     n_beta_cas = nelecas // 2
     n_configs = _comb(ncas, n_alpha_cas) * _comb(ncas, n_beta_cas)
-    use_casci = ncas >= 15 or n_configs > 50_000_000
+    use_casci = ncas >= 15 or n_configs > _FCI_CONFIG_LIMIT
 
     if use_casci:
         mc = mcscf.CASCI(mf, ncas=ncas, nelecas=nelecas)
@@ -487,7 +495,7 @@ def _make_cr2(
     if mol.symmetry and mol.topgroup in ("Dooh", "Coov"):
         mc.fcisolver = fci.direct_spin1.FCISolver(mol)
 
-    if use_casci and n_configs > 50_000_000:
+    if use_casci and n_configs > _FCI_CONFIG_LIMIT:
         logger.info(
             "Skipping FCI for Cr₂ CAS(%d,%d): %s configs.",
             nelecas,
