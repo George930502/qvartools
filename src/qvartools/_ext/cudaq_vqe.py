@@ -200,7 +200,7 @@ def run_cudaq_vqe(
         )
 
     error_mha: float | None = (
-        abs(energy - fci_energy) * 1000 if fci_energy is not None else None
+        (energy - fci_energy) * 1000.0 if fci_energy is not None else None
     )
 
     return {
