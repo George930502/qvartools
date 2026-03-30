@@ -59,7 +59,9 @@ class TestCASParameterSignature:
 
     def test_casci_parameter_exists(self):
         sig = inspect.signature(compute_molecular_integrals)
-        assert "casci" in sig.parameters, "compute_molecular_integrals must accept 'casci'"
+        assert "casci" in sig.parameters, (
+            "compute_molecular_integrals must accept 'casci'"
+        )
 
     def test_cas_default_is_none(self):
         sig = inspect.signature(compute_molecular_integrals)
@@ -82,9 +84,7 @@ class TestN2CAS10_8:
 
     @pytest.fixture(scope="class")
     def integrals(self) -> MolecularIntegrals:
-        return compute_molecular_integrals(
-            N2_GEOMETRY, basis="cc-pvdz", cas=(10, 8)
-        )
+        return compute_molecular_integrals(N2_GEOMETRY, basis="cc-pvdz", cas=(10, 8))
 
     def test_h1e_shape(self, integrals: MolecularIntegrals):
         assert integrals.h1e.shape == (8, 8)
@@ -139,9 +139,7 @@ class TestN2CAS10_12:
 
     @pytest.fixture(scope="class")
     def integrals(self) -> MolecularIntegrals:
-        return compute_molecular_integrals(
-            N2_GEOMETRY, basis="cc-pvdz", cas=(10, 12)
-        )
+        return compute_molecular_integrals(N2_GEOMETRY, basis="cc-pvdz", cas=(10, 12))
 
     def test_n_orbitals_is_ncas(self, integrals: MolecularIntegrals):
         assert integrals.n_orbitals == 12
@@ -176,9 +174,7 @@ class TestCASCIFallback:
 
     def test_large_ncas_auto_casci(self):
         """CAS(10,15) should auto-use CASCI (ncas >= 15)."""
-        mi = compute_molecular_integrals(
-            N2_GEOMETRY, basis="cc-pvdz", cas=(10, 15)
-        )
+        mi = compute_molecular_integrals(N2_GEOMETRY, basis="cc-pvdz", cas=(10, 15))
         assert isinstance(mi, MolecularIntegrals)
         assert mi.n_orbitals == 15
         assert mi.n_alpha == 5
