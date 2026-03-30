@@ -7,19 +7,21 @@ and returns correct active-space integrals.
 
 from __future__ import annotations
 
+import importlib.util
 import inspect
 from math import comb
 
 import numpy as np
 import pytest
 
-pyscf = pytest.importorskip("pyscf")
-
 from qvartools.hamiltonians.integrals import (
     MolecularIntegrals,
     cached_compute_molecular_integrals,
     compute_molecular_integrals,
 )
+
+_HAS_PYSCF = importlib.util.find_spec("pyscf") is not None
+pyscf_required = pytest.mark.skipif(not _HAS_PYSCF, reason="PySCF not installed")
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -77,6 +79,7 @@ class TestCASParameterSignature:
 # ---------------------------------------------------------------------------
 
 
+@pyscf_required
 @pytest.mark.pyscf
 @pytest.mark.slow
 class TestN2CAS10_8:
@@ -134,6 +137,7 @@ class TestN2CAS10_8:
 # ---------------------------------------------------------------------------
 
 
+@pyscf_required
 @pytest.mark.pyscf
 @pytest.mark.slow
 class TestN2CAS10_12:
@@ -161,6 +165,7 @@ class TestN2CAS10_12:
 # ---------------------------------------------------------------------------
 
 
+@pyscf_required
 @pytest.mark.pyscf
 @pytest.mark.slow
 class TestCASCIFallback:
@@ -188,6 +193,7 @@ class TestCASCIFallback:
 # ---------------------------------------------------------------------------
 
 
+@pyscf_required
 @pytest.mark.pyscf
 @pytest.mark.slow
 class TestCacheBypassForCAS:

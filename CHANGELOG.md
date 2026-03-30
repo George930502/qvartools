@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Old class names kept as deprecated aliases until v0.1.0
 
 ### Added
+- `compute_molecular_integrals` now accepts `cas` and `casci` parameters for CAS active-space reduction
+- 12 new CAS molecules in registry: N₂-CAS(10,12/15/17/20/26), Cr₂ + variants, Benzene CAS(6,15)
+- `_compute_cas_integrals` helper with auto-CASCI fallback for large active spaces
 - `TransformerAsNQS` adapter: enables `AutoregressiveTransformer` in NF training pipeline
 - `NQSWithSampling` adapter: enables any `NeuralQuantumState` in HI training pipeline
 - `qvartools._logging` module with `configure_logging()` and `get_logger()`

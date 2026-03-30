@@ -429,7 +429,29 @@ def _benzene_geometry() -> list[tuple[str, tuple[float, float, float]]]:
 def _make_n2_cas(
     nelecas: int, ncas: int, basis: str, device: str = "cpu"
 ) -> tuple[MolecularHamiltonian, dict[str, Any]]:
-    """Create N₂ CAS Hamiltonian."""
+    """Create N₂ CAS Hamiltonian with specified active space.
+
+    Parameters
+    ----------
+    nelecas : int
+        Number of active electrons.
+    ncas : int
+        Number of active orbitals.
+    basis : str
+        Gaussian basis set name (e.g. ``"cc-pvdz"``).
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+
+    Raises
+    ------
+    ImportError
+        If PySCF is not installed.
+    """
     use_casci = ncas >= 15
     integrals = compute_molecular_integrals(
         _N2_CAS_GEOMETRY, basis=basis, cas=(nelecas, ncas), casci=use_casci
@@ -452,6 +474,25 @@ def _make_cr2(
     Without fix_spin_, CASSCF converges to the septet (S=3) instead of the
     singlet ground state.  Uses ROHF fallback if RHF doesn't converge.
     Auto-CASCI for large active spaces (ncas >= 15).
+
+    Parameters
+    ----------
+    basis : str, optional
+        Gaussian basis set name (default ``"sto-3g"``).
+    cas : tuple of (int, int), optional
+        ``(nelecas, ncas)`` active-space specification (default ``(12, 12)``).
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+
+    Raises
+    ------
+    ImportError
+        If PySCF is not installed.
     """
     import warnings
     from math import comb as _comb
@@ -537,7 +578,20 @@ def _make_cr2(
 
 
 def _make_benzene(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
-    """Create Benzene CAS(6,15) Hamiltonian."""
+    """Create Benzene CAS(6,15) Hamiltonian.
+
+    Uses CASCI (no orbital optimisation) because ncas >= 15.
+
+    Parameters
+    ----------
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+    """
     geom = _benzene_geometry()
     integrals = compute_molecular_integrals(
         geom, basis="sto-3g", cas=(6, 15), casci=True

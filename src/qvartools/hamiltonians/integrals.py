@@ -265,6 +265,11 @@ def _compute_cas_integrals(
     -------
     MolecularIntegrals
         Active-space integrals with ``nuclear_repulsion = e_core``.
+
+    Raises
+    ------
+    ValueError
+        If active electron counts are negative or exceed ``ncas``.
     """
     from math import comb as _comb
 
