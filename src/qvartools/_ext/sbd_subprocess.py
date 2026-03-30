@@ -15,6 +15,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+import math
 import os
 import shutil
 import subprocess
@@ -161,7 +162,9 @@ def sbd_diagonalize(
     max_iterations : int, optional
         Maximum Davidson iterations.
     n_threads : int, optional
-        OpenMP threads.
+        Number of OpenMP threads per MPI rank (default ``4``).
+        Passed via ``mpirun -x OMP_NUM_THREADS``.  The subprocess
+        runs with a single MPI rank (``-np 1``).
     timeout : int, optional
         Subprocess timeout in seconds (default ``600``).
 
@@ -169,6 +172,15 @@ def sbd_diagonalize(
     -------
     float
         Ground state energy (electronic + nuclear repulsion).
+
+    Raises
+    ------
+    ValueError
+        If integral shapes are inconsistent with ``n_orb``, or if
+        ``alpha_strings``/``beta_strings`` have wrong rank or column count.
+    RuntimeError
+        If the sbd binary or mpirun is not found, the subprocess fails,
+        or the energy cannot be parsed from the output.
     """
     # --- Input validation ---
     h1e = np.asarray(h1e)
@@ -184,6 +196,8 @@ def sbd_diagonalize(
             raise ValueError(
                 f"{name} must have shape (n_strings, {n_orb}), got {tuple(arr.shape)}"
             )
+        if arr.is_floating_point():
+            raise ValueError(f"{name} must be integer dtype, got {arr.dtype}")
 
     binary = _find_sbd_binary()
     if binary is None:
@@ -260,6 +274,8 @@ def sbd_diagonalize(
                 except ValueError:
                     continue
         if energy is not None:
+            if not math.isfinite(energy):
+                raise RuntimeError(f"sbd returned non-finite energy: {energy}")
             return energy
 
         raise RuntimeError(
