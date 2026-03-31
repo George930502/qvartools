@@ -2,7 +2,7 @@
 
 > This document serves as a comprehensive reference for AI coding agents (e.g., Claude Code, Copilot, Cursor) working on the **qvartools** codebase. It provides the full project context, architecture, conventions, and actionable guidance needed to make accurate, well-scoped contributions.
 >
-> **Repository:** `https://github.com/George930502/qvartools`
+> **Repository:** `https://github.com/QuantumNoLab/qvartools`
 > **Author:** George Chang
 > **License:** MIT
 > **Version:** 0.0.0 (initial development release)
