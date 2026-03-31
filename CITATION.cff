@@ -7,7 +7,7 @@ authors:
 version: 0.0.0
 date-released: "2026-03-26"
 license: MIT
-repository-code: "https://github.com/George930502/qvartools"
+repository-code: "https://github.com/QuantumNoLab/qvartools"
 keywords:
   - quantum chemistry
   - variational methods

@@ -42,11 +42,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/George930502/qvartools"
+Homepage = "https://github.com/QuantumNoLab/qvartools"
 Documentation = "https://qvartools.readthedocs.io/en/latest/"
-Repository = "https://github.com/George930502/qvartools"
-Changelog = "https://github.com/George930502/qvartools/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/George930502/qvartools/issues"
+Repository = "https://github.com/QuantumNoLab/qvartools"
+Changelog = "https://github.com/QuantumNoLab/qvartools/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/QuantumNoLab/qvartools/issues"
 
 [project.optional-dependencies]
 pyscf = ["pyscf>=2.4"]

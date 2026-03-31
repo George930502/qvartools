@@ -67,5 +67,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker GPU support
 - ReadTheDocs integration
 
-[Unreleased]: https://github.com/George930502/qvartools/compare/v0.0.0...HEAD
-[0.0.0]: https://github.com/George930502/qvartools/releases/tag/v0.0.0
+[Unreleased]: https://github.com/QuantumNoLab/qvartools/compare/v0.0.0...HEAD
+[0.0.0]: https://github.com/QuantumNoLab/qvartools/releases/tag/v0.0.0

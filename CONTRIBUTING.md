@@ -18,7 +18,7 @@ cd qvartools
 3. Add the upstream remote:
 
 ```bash
-git remote add upstream https://github.com/George930502/qvartools.git
+git remote add upstream https://github.com/QuantumNoLab/qvartools.git
 ```
 
 ### Development Setup

@@ -1,6 +1,6 @@
 # qvartools
 
-[![CI](https://github.com/George930502/qvartools/actions/workflows/ci.yml/badge.svg)](https://github.com/George930502/qvartools/actions/workflows/ci.yml)
+[![CI](https://github.com/QuantumNoLab/qvartools/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantumNoLab/qvartools/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/qvartools/badge/?version=latest)](https://qvartools.readthedocs.io/en/latest/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
@@ -192,7 +192,7 @@ If you use qvartools in your research, please cite:
   author    = {George Chang},
   title     = {qvartools: Quantum Variational Toolkit},
   year      = {2026},
-  url       = {https://github.com/George930502/qvartools},
+  url       = {https://github.com/QuantumNoLab/qvartools},
   version   = {0.0.0},
 }
 ```
