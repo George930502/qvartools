@@ -123,7 +123,8 @@ failing test first → minimal implementation → refactor.
 - `create_cr2_hamiltonian(cas, basis, device)` — 24–58Q, with `fix_spin_`
 - `create_benzene_hamiltonian(basis, device)` — 30Q CAS(6,15)
 
-**Registry additions (12 new entries):**
+**Registry additions (12 new entries in BOTH `MOLECULE_REGISTRY` and
+`_MOLECULE_INFO_REGISTRY` — missing either triggers import-time `RuntimeError`):**
 - N₂-CAS(10,12/15/17/20/26): 24, 30, 34, 40, 52Q
 - Cr₂ + Cr₂-CAS(12,18/20/26/28/29): 24, 36, 40, 52, 56, 58Q
 - Benzene CAS(6,15): 30Q

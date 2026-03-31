@@ -19,6 +19,7 @@ import torch
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.pyscf
 class TestDenseLimitRaised:
     """Verify ``matrix_elements_fast`` now allows up to 50K configs."""
 
@@ -47,6 +48,7 @@ class TestDenseLimitRaised:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.pyscf
 class TestBuildSparseHamiltonian:
     """Verify the new ``build_sparse_hamiltonian`` method."""
 
@@ -95,6 +97,7 @@ class TestBuildSparseHamiltonian:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.pyscf
 class TestSparseEigenvaluesMatchDense:
     """Compare eigenvalues from sparse and dense Hamiltonian construction."""
 
@@ -148,6 +151,7 @@ class TestSparseEigenvaluesMatchDense:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.pyscf
 class TestGpuSolveFermionSparseFallback:
     """Verify ``gpu_solve_fermion`` uses sparse path for large bases."""
 

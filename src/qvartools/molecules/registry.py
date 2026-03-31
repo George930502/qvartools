@@ -529,6 +529,7 @@ def _make_cr2(
 
     if use_casci:
         mc = mcscf.CASCI(mf, ncas=ncas, nelecas=nelecas)
+        mc.fix_spin_(ss=0)  # Enforce singlet (needed for CASCI too)
     else:
         mc = mcscf.CASSCF(mf, ncas=ncas, nelecas=nelecas)
         mc.fix_spin_(ss=0)  # Enforce singlet
