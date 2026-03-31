@@ -1,6 +1,6 @@
 """Tests for experiments/config_loader.py.
 
-Covers the two bugs from George930502/qvartools#1:
+Covers the two bugs from QuantumNoLab/qvartools#1:
   - positional argument with dest kwarg (ValueError)
   - store_true action with nargs=0 (ValueError)
 """
