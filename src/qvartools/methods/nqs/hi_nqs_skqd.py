@@ -276,19 +276,20 @@ def run_hi_nqs_skqd(
 
     # --- Cumulative basis (warm-start from initial_basis if provided) ---
     if initial_basis is not None:
+        # Validate raw input before any cast (fail-fast)
         if initial_basis.is_floating_point():
             raise ValueError(
                 f"initial_basis must be integer dtype (binary occupations), "
                 f"got {initial_basis.dtype}"
             )
-        cumulative_basis = initial_basis.to(dtype=torch.long, device=device)
-        if cumulative_basis.ndim != 2 or cumulative_basis.shape[1] != n_qubits:
+        if initial_basis.ndim != 2 or initial_basis.shape[1] != n_qubits:
             raise ValueError(
                 f"initial_basis must have shape (n_configs, {n_qubits}), "
-                f"but got {tuple(cumulative_basis.shape)}"
+                f"but got {tuple(initial_basis.shape)}"
             )
-        if not torch.all((cumulative_basis == 0) | (cumulative_basis == 1)):
+        if not torch.all((initial_basis == 0) | (initial_basis == 1)):
             raise ValueError("initial_basis must contain only binary values {0, 1}")
+        cumulative_basis = initial_basis.to(dtype=torch.long, device=device)
         cumulative_basis = torch.unique(cumulative_basis, dim=0)
         logger.info(
             "Warm-starting with %d initial basis configs", cumulative_basis.shape[0]
@@ -393,11 +394,10 @@ def run_hi_nqs_skqd(
                 best_batch_configs = batch_configs
 
         if not batch_energies:
-            logger.warning(
-                "All batches produced non-finite energies at iteration %d",
-                iteration + 1,
+            raise RuntimeError(
+                f"All {cfg.n_batches} batches produced non-finite energies "
+                f"at iteration {iteration + 1}. Check Hamiltonian integrals."
             )
-            iter_energy = float("inf")
         else:
             iter_energy = float(np.min(batch_energies))
         energy_history.append(iter_energy)

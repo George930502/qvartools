@@ -529,7 +529,7 @@ All configurable components use **frozen dataclasses** with sensible defaults:
 - `ImportError` with install instructions for optional deps (pyscf, cudaq, cupy, qiskit)
 - `RuntimeError` for failed SCF convergence, missing basis, etc.
 - `ValueError` for invalid configurations (validated in `__post_init__`)
-- `MemoryError` for matrices exceeding safe limits (>10K configs in `matrix_elements_fast`)
+- `MemoryError` for matrices exceeding safe limits (>50K configs in `matrix_elements_fast`); use `build_sparse_hamiltonian()` for larger bases
 
 ### Numba Strategy
 

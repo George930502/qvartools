@@ -136,16 +136,39 @@ Each subpackage is self-contained with a clean public API. Lower-level modules h
 
 ## Available Molecules
 
+### Full-Space Systems
+
 | Name | Qubits | Basis Set |
 |------|--------|-----------|
 | H2   | 4      | sto-3g    |
-| LiH  | 12     | sto-6g    |
-| BeH2 | 14     | sto-6g    |
-| H2O  | 14     | sto-6g    |
-| NH3  | 16     | sto-6g    |
-| CH4  | 18     | sto-6g    |
+| LiH  | 12     | sto-3g    |
+| BeH2 | 14     | sto-3g    |
+| H2O  | 14     | sto-3g    |
+| NH3  | 16     | sto-3g    |
+| CH4  | 18     | sto-3g    |
 | N2   | 20     | cc-pvdz   |
+| CO   | 20     | sto-3g    |
+| HCN  | 22     | sto-3g    |
+| C2H2 | 24     | sto-3g    |
+| H2S  | 26     | sto-3g    |
 | C2H4 | 28     | sto-3g    |
+
+### CAS Active-Space Systems
+
+| Name | Qubits | Basis Set | Active Space |
+|------|--------|-----------|-------------|
+| N2-CAS(10,12)  | 24 | cc-pvdz | 10e, 12 orb |
+| Cr2             | 24 | sto-3g  | CAS(12,12)  |
+| N2-CAS(10,15)  | 30 | cc-pvdz | 10e, 15 orb |
+| Benzene         | 30 | sto-3g  | CAS(6,15)   |
+| N2-CAS(10,17)  | 34 | cc-pvdz | 10e, 17 orb |
+| Cr2-CAS(12,18) | 36 | cc-pvdz | 12e, 18 orb |
+| N2-CAS(10,20)  | 40 | cc-pvtz | 10e, 20 orb |
+| Cr2-CAS(12,20) | 40 | cc-pvdz | 12e, 20 orb |
+| N2-CAS(10,26)  | 52 | cc-pvtz | 10e, 26 orb |
+| Cr2-CAS(12,26) | 52 | cc-pvdz | 12e, 26 orb |
+| Cr2-CAS(12,28) | 56 | cc-pvdz | 12e, 28 orb |
+| Cr2-CAS(12,29) | 58 | cc-pvdz | 12e, 29 orb |
 
 ## Documentation
 
