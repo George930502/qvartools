@@ -16,14 +16,12 @@ Authors
 | **Hsiu Chi Tsai** — National Yang Ming Chiao Tung University
 | GitHub: `thc1006 <https://github.com/thc1006>`_ · ORCID: `0000-0001-7421-8027 <https://orcid.org/0000-0001-7421-8027>`_
 
-| **monmon** — National Yang Ming Chiao Tung University
-| GitHub: `ericntunctu <https://github.com/ericntunctu>`_
+Contributors
+------------
 
-| **Ray Lin** — National Tsing Hua University
-| GitHub: `RayLin87564231 <https://github.com/RayLin87564231>`_
-
-| **yangsc11-beep** — National Yang Ming Chiao Tung University
-| GitHub: `yangsc11-beep <https://github.com/yangsc11-beep>`_
+| **monmon** (`ericntunctu <https://github.com/ericntunctu>`_) — National Yang Ming Chiao Tung University
+| **Ray Lin** (`RayLin87564231 <https://github.com/RayLin87564231>`_) — National Tsing Hua University
+| **yangsc11-beep** (`yangsc11-beep <https://github.com/yangsc11-beep>`_) — National Yang Ming Chiao Tung University
 
 How to Cite
 -----------
@@ -41,7 +39,9 @@ If you use qvartools in your research, please cite:
      version   = {0.0.0}
    }
 
-A machine-readable citation file is available at
+The BibTeX entry lists the primary authors. For a complete list of
+contributors, see the Authors section above. A machine-readable
+citation file is available at
 `CITATION.cff <https://github.com/QuantumNoLab/qvartools/blob/main/CITATION.cff>`_.
 
 License
