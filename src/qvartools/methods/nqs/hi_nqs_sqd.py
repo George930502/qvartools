@@ -224,7 +224,7 @@ def run_hi_nqs_sqd(
     ------
     ValueError
         If ``mol_info`` is missing required keys, or if ``initial_basis``
-        has wrong shape, non-binary values, or non-integer dtype.
+        has wrong shape, non-binary values, or floating-point/complex dtype.
     RuntimeError
         If all diagonalisation batches produce non-finite energies.
     """
@@ -275,7 +275,7 @@ def run_hi_nqs_sqd(
         # Validate raw input before any cast (fail-fast)
         if initial_basis.is_floating_point() or initial_basis.is_complex():
             raise ValueError(
-                f"initial_basis must be integer dtype (binary occupations), "
+                f"initial_basis must be integer or bool dtype (binary occupations), "
                 f"got {initial_basis.dtype}"
             )
         if initial_basis.ndim != 2 or initial_basis.shape[1] != n_qubits:
