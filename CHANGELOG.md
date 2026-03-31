@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FCISolver._dense_fallback()` returns `None` instead of raising `RuntimeError` for large Hilbert spaces
 
 ### Added
+- `compute_molecular_integrals` now accepts `cas` and `casci` parameters for CAS active-space reduction
+- 12 new CAS molecules in registry: N₂-CAS(10,12/15/17/20/26), Cr₂ + variants, Benzene CAS(6,15)
+- `_compute_cas_integrals` helper with auto-CASCI fallback for large active spaces
 - `MolecularHamiltonian.build_sparse_hamiltonian()` for O(nnz) sparse H construction
 - Sparse eigenvalue dispatch in `gpu_solve_fermion` for basis > 8K configs
 - CAS-aware `FCISolver` using active-space integrals directly (no full molecule rebuild)

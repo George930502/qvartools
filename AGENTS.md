@@ -257,7 +257,7 @@ qvartools/
 │   │       └── lucj_sampler.py       # LUCJSampler (Qiskit + ffsim LUCJ circuit)
 │   │
 │   ├── molecules/                # Molecular system registry
-│   │   └── registry.py           # MOLECULE_REGISTRY (12 molecules), get_molecule, list_molecules
+│   │   └── registry.py           # MOLECULE_REGISTRY (24 molecules: 12 full-space + 12 CAS), get_molecule, list_molecules
 │   │
 │   ├── _ext/                     # Experimental GPU extensions
 │   │   ├── __init__.py
@@ -454,7 +454,9 @@ Stage 1: Train Flow + NQS          Stage 2: Basis Selection         Stage 3: Sub
 
 ## 4. Molecule Registry
 
-12 pre-configured molecular benchmarks accessible via `get_molecule(name)`:
+24 pre-configured molecular benchmarks (12 full-space + 12 CAS active-space) accessible via `get_molecule(name)`:
+
+**Full-space molecules (4--28 qubits)**
 
 | Name | Qubits | Basis Set | Geometry |
 |------|--------|-----------|----------|
@@ -470,6 +472,23 @@ Stage 1: Train Flow + NQS          Stage 2: Basis Selection         Stage 3: Sub
 | C2H2 | 24 | sto-3g | linear |
 | H2S | 26 | sto-3g | bent |
 | C2H4 | 28 | sto-3g | planar |
+
+**CAS active-space molecules (24--58 qubits)**
+
+| Name | Qubits | Basis Set | Active Space |
+|------|--------|-----------|--------------|
+| N2-CAS(10,12) | 24 | cc-pvdz | 10e, 12o |
+| Cr2 | 24 | sto-3g | 12e, 12o |
+| N2-CAS(10,15) | 30 | cc-pvdz | 10e, 15o |
+| Benzene | 30 | sto-3g | 6e, 15o |
+| N2-CAS(10,17) | 34 | cc-pvdz | 10e, 17o |
+| Cr2-CAS(12,18) | 36 | cc-pvdz | 12e, 18o |
+| N2-CAS(10,20) | 40 | cc-pvtz | 10e, 20o |
+| Cr2-CAS(12,20) | 40 | cc-pvdz | 12e, 20o |
+| N2-CAS(10,26) | 52 | cc-pvtz | 10e, 26o |
+| Cr2-CAS(12,26) | 52 | cc-pvdz | 12e, 26o |
+| Cr2-CAS(12,28) | 56 | cc-pvdz | 12e, 28o |
+| Cr2-CAS(12,29) | 58 | cc-pvdz | 12e, 29o |
 
 ---
 

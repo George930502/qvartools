@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from qvartools.hamiltonians.integrals import _FCI_CONFIG_LIMIT
 from qvartools.hamiltonians.molecular import (
     MolecularHamiltonian,
     compute_molecular_integrals,
@@ -390,6 +391,219 @@ def _make_h2s(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
+# CAS molecule geometries
+# ---------------------------------------------------------------------------
+
+# N₂ CAS uses 1.10 Å bond length (standard for CAS benchmarks in Flow-Guided-Krylov),
+# distinct from the full-space N₂ which uses 1.0977 Å (NIST equilibrium).
+_N2_CAS_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
+    ("N", (0.0, 0.0, 0.0)),
+    ("N", (0.0, 0.0, 1.10)),
+]
+
+_CR2_GEOMETRY: list[tuple[str, tuple[float, float, float]]] = [
+    ("Cr", (0.0, 0.0, 0.0)),
+    ("Cr", (0.0, 0.0, 1.68)),
+]
+
+
+def _benzene_geometry() -> list[tuple[str, tuple[float, float, float]]]:
+    """Regular hexagon benzene geometry (C-C = 1.40 A, C-H = 1.08 A)."""
+    import math
+
+    cc, ch = 1.40, 1.08
+    geom: list[tuple[str, tuple[float, float, float]]] = []
+    for i in range(6):
+        angle = math.pi / 3 * i
+        geom.append(("C", (cc * math.cos(angle), cc * math.sin(angle), 0.0)))
+        geom.append(
+            ("H", ((cc + ch) * math.cos(angle), (cc + ch) * math.sin(angle), 0.0))
+        )
+    return geom
+
+
+# ---------------------------------------------------------------------------
+# CAS molecule factory functions
+# ---------------------------------------------------------------------------
+
+
+def _make_n2_cas(
+    nelecas: int, ncas: int, basis: str, device: str = "cpu"
+) -> tuple[MolecularHamiltonian, dict[str, Any]]:
+    """Create N₂ CAS Hamiltonian with specified active space.
+
+    Parameters
+    ----------
+    nelecas : int
+        Number of active electrons.
+    ncas : int
+        Number of active orbitals.
+    basis : str
+        Gaussian basis set name (e.g. ``"cc-pvdz"``).
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+
+    Raises
+    ------
+    ImportError
+        If PySCF is not installed.
+    """
+    use_casci = ncas >= 15
+    integrals = compute_molecular_integrals(
+        _N2_CAS_GEOMETRY, basis=basis, cas=(nelecas, ncas), casci=use_casci
+    )
+    ham = MolecularHamiltonian(integrals, device=device)
+    info = _build_info(
+        f"N2-CAS({nelecas},{ncas})", 2 * ncas, basis, _N2_CAS_GEOMETRY, 0, 0
+    )
+    info["is_cas"] = True
+    return ham, info
+
+
+def _make_cr2(
+    basis: str = "sto-3g",
+    cas: tuple[int, int] = (12, 12),
+    device: str = "cpu",
+) -> tuple[MolecularHamiltonian, dict[str, Any]]:
+    """Create Cr₂ CAS Hamiltonian with fix_spin_(ss=0) for singlet.
+
+    Without fix_spin_, CASSCF converges to the septet (S=3) instead of the
+    singlet ground state.  Uses ROHF fallback if RHF doesn't converge.
+    Auto-CASCI for large active spaces (ncas >= 15).
+
+    Parameters
+    ----------
+    basis : str, optional
+        Gaussian basis set name (default ``"sto-3g"``).
+    cas : tuple of (int, int), optional
+        ``(nelecas, ncas)`` active-space specification (default ``(12, 12)``).
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+
+    Raises
+    ------
+    ImportError
+        If PySCF is not installed.
+    """
+    import warnings
+    from math import comb as _comb
+
+    try:
+        from pyscf import ao2mo, fci, gto, mcscf, scf
+    except ImportError as exc:
+        raise ImportError("PySCF is required for Cr₂. pip install pyscf") from exc
+
+    nelecas, ncas = cas
+    mol = gto.M(
+        atom="Cr 0 0 0; Cr 0 0 1.68", basis=basis, spin=0, symmetry=True, verbose=0
+    )
+    mf = scf.RHF(mol)
+    mf.max_cycle = 300
+    mf.kernel()
+    if not mf.converged:
+        warnings.warn("RHF did not converge for Cr₂, trying ROHF.", stacklevel=2)
+        mf = scf.ROHF(mol)
+        mf.max_cycle = 300
+        mf.kernel()
+        if not mf.converged:
+            warnings.warn(
+                "ROHF also did not converge for Cr₂. Results may be unreliable.",
+                stacklevel=2,
+            )
+
+    # Estimate config count for auto-CASCI
+    n_alpha_cas = nelecas // 2
+    n_beta_cas = nelecas // 2
+    n_configs = _comb(ncas, n_alpha_cas) * _comb(ncas, n_beta_cas)
+    use_casci = ncas >= 15 or n_configs > _FCI_CONFIG_LIMIT
+
+    if use_casci:
+        mc = mcscf.CASCI(mf, ncas=ncas, nelecas=nelecas)
+    else:
+        mc = mcscf.CASSCF(mf, ncas=ncas, nelecas=nelecas)
+        mc.fix_spin_(ss=0)  # Enforce singlet
+
+    # Linear molecules need non-symmetry FCI solver
+    if mol.symmetry and mol.topgroup in ("Dooh", "Coov"):
+        mc.fcisolver = fci.direct_spin1.FCISolver(mol)
+
+    if use_casci and n_configs > _FCI_CONFIG_LIMIT:
+        logger.info(
+            "Skipping FCI for Cr₂ CAS(%d,%d): %s configs.",
+            nelecas,
+            ncas,
+            f"{n_configs:,}",
+        )
+    else:
+        mc.kernel()
+        if not use_casci and not mc.converged:
+            warnings.warn(
+                f"CASSCF did not converge for Cr₂ CAS({nelecas},{ncas}).", stacklevel=2
+            )
+
+    h1e_cas, e_core = mc.h1e_for_cas()
+    active_mo = mc.mo_coeff[:, mc.ncore : mc.ncore + mc.ncas]
+    h2e_cas = ao2mo.full(mol, active_mo)
+    h2e_cas = ao2mo.restore(1, h2e_cas, ncas)
+
+    import numpy as np
+
+    from qvartools.hamiltonians.integrals import MolecularIntegrals
+
+    integrals = MolecularIntegrals(
+        h1e=np.asarray(h1e_cas, dtype=np.float64),
+        h2e=np.asarray(h2e_cas, dtype=np.float64),
+        nuclear_repulsion=float(e_core),
+        n_electrons=nelecas,
+        n_orbitals=ncas,
+        n_alpha=n_alpha_cas,
+        n_beta=n_beta_cas,
+    )
+    ham = MolecularHamiltonian(integrals, device=device)
+    name = (
+        "Cr2" if cas == (12, 12) and basis == "sto-3g" else f"Cr2-CAS({nelecas},{ncas})"
+    )
+    info = _build_info(name, 2 * ncas, basis, list(_CR2_GEOMETRY), 0, 0)
+    info["is_cas"] = True
+    return ham, info
+
+
+def _make_benzene(device: str = "cpu") -> tuple[MolecularHamiltonian, dict[str, Any]]:
+    """Create Benzene CAS(6,15) Hamiltonian.
+
+    Uses CASCI (no orbital optimisation) because ncas >= 15.
+
+    Parameters
+    ----------
+    device : str, optional
+        Torch device (default ``"cpu"``).
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, info_dict)`` where ``info_dict["is_cas"]`` is ``True``.
+    """
+    geom = _benzene_geometry()
+    integrals = compute_molecular_integrals(
+        geom, basis="sto-3g", cas=(6, 15), casci=True
+    )
+    ham = MolecularHamiltonian(integrals, device=device)
+    info = _build_info("Benzene", 30, "sto-3g", geom, 0, 0)
+    info["is_cas"] = True
+    return ham, info
+
+
+# ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
 
@@ -512,6 +726,91 @@ MOLECULE_REGISTRY: dict[str, dict[str, Any]] = {
         "description": "Hydrogen sulfide (STO-3G)",
         "basis": "sto-3g",
     },
+    # --- CAS active-space systems (24-58 qubits) ---
+    "n2-cas(10,12)": {
+        "factory": lambda device="cpu": _make_n2_cas(10, 12, "cc-pvdz", device),
+        "n_qubits": 24,
+        "description": "Nitrogen CAS(10,12) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "cr2": {
+        "factory": lambda device="cpu": _make_cr2("sto-3g", (12, 12), device),
+        "n_qubits": 24,
+        "description": "Chromium dimer CAS(12,12) STO-3G",
+        "basis": "sto-3g",
+        "is_cas": True,
+    },
+    "n2-cas(10,15)": {
+        "factory": lambda device="cpu": _make_n2_cas(10, 15, "cc-pvdz", device),
+        "n_qubits": 30,
+        "description": "Nitrogen CAS(10,15) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "benzene": {
+        "factory": _make_benzene,
+        "n_qubits": 30,
+        "description": "Benzene CAS(6,15) STO-3G",
+        "basis": "sto-3g",
+        "is_cas": True,
+    },
+    "n2-cas(10,17)": {
+        "factory": lambda device="cpu": _make_n2_cas(10, 17, "cc-pvdz", device),
+        "n_qubits": 34,
+        "description": "Nitrogen CAS(10,17) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "cr2-cas(12,18)": {
+        "factory": lambda device="cpu": _make_cr2("cc-pvdz", (12, 18), device),
+        "n_qubits": 36,
+        "description": "Chromium dimer CAS(12,18) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "n2-cas(10,20)": {
+        "factory": lambda device="cpu": _make_n2_cas(10, 20, "cc-pvtz", device),
+        "n_qubits": 40,
+        "description": "Nitrogen CAS(10,20) cc-pVTZ",
+        "basis": "cc-pvtz",
+        "is_cas": True,
+    },
+    "cr2-cas(12,20)": {
+        "factory": lambda device="cpu": _make_cr2("cc-pvdz", (12, 20), device),
+        "n_qubits": 40,
+        "description": "Chromium dimer CAS(12,20) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "n2-cas(10,26)": {
+        "factory": lambda device="cpu": _make_n2_cas(10, 26, "cc-pvtz", device),
+        "n_qubits": 52,
+        "description": "Nitrogen CAS(10,26) cc-pVTZ",
+        "basis": "cc-pvtz",
+        "is_cas": True,
+    },
+    "cr2-cas(12,26)": {
+        "factory": lambda device="cpu": _make_cr2("cc-pvdz", (12, 26), device),
+        "n_qubits": 52,
+        "description": "Chromium dimer CAS(12,26) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "cr2-cas(12,28)": {
+        "factory": lambda device="cpu": _make_cr2("cc-pvdz", (12, 28), device),
+        "n_qubits": 56,
+        "description": "Chromium dimer CAS(12,28) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
+    "cr2-cas(12,29)": {
+        "factory": lambda device="cpu": _make_cr2("cc-pvdz", (12, 29), device),
+        "n_qubits": 58,
+        "description": "Chromium dimer CAS(12,29) cc-pVDZ",
+        "basis": "cc-pvdz",
+        "is_cas": True,
+    },
 }
 
 _MOLECULE_INFO_REGISTRY: dict[str, dict[str, Any]] = {
@@ -527,6 +826,55 @@ _MOLECULE_INFO_REGISTRY: dict[str, dict[str, Any]] = {
     "hcn": _build_info("HCN", 22, "sto-3g", _HCN_GEOMETRY, 0, 0),
     "c2h2": _build_info("C2H2", 24, "sto-3g", _C2H2_GEOMETRY, 0, 0),
     "h2s": _build_info("H2S", 26, "sto-3g", _H2S_GEOMETRY, 0, 0),
+    # --- CAS active-space systems ---
+    "n2-cas(10,12)": {
+        **_build_info("N2-CAS(10,12)", 24, "cc-pvdz", list(_N2_CAS_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2": {
+        **_build_info("Cr2", 24, "sto-3g", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "n2-cas(10,15)": {
+        **_build_info("N2-CAS(10,15)", 30, "cc-pvdz", list(_N2_CAS_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "benzene": {
+        **_build_info("Benzene", 30, "sto-3g", _benzene_geometry(), 0, 0),
+        "is_cas": True,
+    },
+    "n2-cas(10,17)": {
+        **_build_info("N2-CAS(10,17)", 34, "cc-pvdz", list(_N2_CAS_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2-cas(12,18)": {
+        **_build_info("Cr2-CAS(12,18)", 36, "cc-pvdz", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "n2-cas(10,20)": {
+        **_build_info("N2-CAS(10,20)", 40, "cc-pvtz", list(_N2_CAS_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2-cas(12,20)": {
+        **_build_info("Cr2-CAS(12,20)", 40, "cc-pvdz", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "n2-cas(10,26)": {
+        **_build_info("N2-CAS(10,26)", 52, "cc-pvtz", list(_N2_CAS_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2-cas(12,26)": {
+        **_build_info("Cr2-CAS(12,26)", 52, "cc-pvdz", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2-cas(12,28)": {
+        **_build_info("Cr2-CAS(12,28)", 56, "cc-pvdz", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
+    "cr2-cas(12,29)": {
+        **_build_info("Cr2-CAS(12,29)", 58, "cc-pvdz", list(_CR2_GEOMETRY), 0, 0),
+        "is_cas": True,
+    },
 }
 
 
