@@ -224,7 +224,9 @@ def run_hi_nqs_sqd(
     ------
     ValueError
         If ``mol_info`` is missing required keys, or if ``initial_basis``
-        has wrong shape, non-binary values, or floating-point dtype.
+        has wrong shape, non-binary values, or non-integer dtype.
+    RuntimeError
+        If all diagonalisation batches produce non-finite energies.
     """
     cfg = config or HINQSSQDConfig()
 
@@ -271,7 +273,7 @@ def run_hi_nqs_sqd(
     # --- Cumulative basis (warm-start from initial_basis if provided) ---
     if initial_basis is not None:
         # Validate raw input before any cast (fail-fast)
-        if initial_basis.is_floating_point():
+        if initial_basis.is_floating_point() or initial_basis.is_complex():
             raise ValueError(
                 f"initial_basis must be integer dtype (binary occupations), "
                 f"got {initial_basis.dtype}"

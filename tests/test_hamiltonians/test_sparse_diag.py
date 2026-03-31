@@ -19,6 +19,7 @@ import torch
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.pyscf
 class TestDenseLimitRaised:
     """Verify ``matrix_elements_fast`` now allows up to 50K configs."""
 
