@@ -95,13 +95,40 @@ class HINQSSQDConfig:
     n_layers : int
         Number of transformer layers per channel (default ``4``).
     temperature : float
-        NQS sampling temperature (default ``1.0``).
+        NQS sampling temperature (default ``1.0``).  Ignored when
+        ``use_pt2_selection`` is ``True`` (uses annealing schedule instead).
     use_ibm_solver : bool
         Use IBM ``solve_fermion`` when available (default ``False``).
         Set to ``True`` only if ``qiskit_addon_sqd`` is installed with a
         compatible API version.
     device : str
         Torch device string (default ``"cpu"``).
+    use_pt2_selection : bool
+        Enable PT2-based perturbative selection of NQS samples
+        (default ``False``).  When ``True``, only the highest-scoring
+        configs (by Epstein-Nesbet PT2 importance) are added to the basis
+        each iteration, and low-coefficient configs are evicted.
+    pt2_top_k : int
+        Number of highest-PT2-scoring configs to keep per iteration
+        (default ``2000``).  Only used when ``use_pt2_selection`` is ``True``.
+    max_basis_size : int
+        Maximum cumulative basis size (default ``10_000``).  Excess configs
+        are evicted by lowest ``|c_i|²`` after each diagonalisation.
+        Only used when ``use_pt2_selection`` is ``True``.
+    convergence_window : int
+        Number of consecutive iterations with ``|ΔE| < energy_tol``
+        required before declaring convergence (default ``3``).
+    initial_temperature : float
+        NQS sampling temperature at iteration 0 (default ``1.0``).
+        Linearly annealed to ``final_temperature``.
+    final_temperature : float
+        NQS sampling temperature at the final iteration (default ``0.3``).
+    teacher_weight : float
+        Weight for the KL-divergence teacher loss term (default ``1.0``).
+    energy_weight : float
+        Weight for the REINFORCE energy loss term (default ``0.1``).
+    entropy_weight : float
+        Weight for the entropy regularisation term (default ``0.05``).
     """
 
     n_iterations: int = 10
@@ -117,6 +144,15 @@ class HINQSSQDConfig:
     temperature: float = 1.0
     use_ibm_solver: bool = False
     device: str = "cpu"
+    use_pt2_selection: bool = False
+    pt2_top_k: int = 2000
+    max_basis_size: int = 10_000
+    convergence_window: int = 3
+    initial_temperature: float = 1.0
+    final_temperature: float = 0.3
+    teacher_weight: float = 1.0
+    energy_weight: float = 0.1
+    entropy_weight: float = 0.05
 
 
 # ---------------------------------------------------------------------------
