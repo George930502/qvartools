@@ -67,19 +67,20 @@ def compute_pt2_scores(
     scores = np.zeros(n_cand, dtype=np.float64)
 
     # Build hash → coefficient map for the basis
+    # config_integer_hash returns int for <64 sites, tuple for >=64 sites;
+    # both are hashable and usable as dict keys directly.
     basis_hash_list = config_integer_hash(basis)
-    basis_coeff_map: dict[int, float] = {}
-    basis_hash_set: set[int] = set()
+    basis_coeff_map: dict = {}
+    basis_hash_set: set = set()
     for i, h in enumerate(basis_hash_list):
-        h_int = int(h)
-        basis_coeff_map[h_int] = float(coeffs[i])
-        basis_hash_set.add(h_int)
+        basis_coeff_map[h] = float(coeffs[i])
+        basis_hash_set.add(h)
 
     # Hash candidates to skip those already in basis
     cand_hash_list = config_integer_hash(candidates)
 
     for idx in range(n_cand):
-        cand_h = int(cand_hash_list[idx])
+        cand_h = cand_hash_list[idx]
         if cand_h in basis_hash_set:
             # Candidate already in basis — not an external determinant
             continue
@@ -104,7 +105,7 @@ def compute_pt2_scores(
         conn_hashes = config_integer_hash(connected)
         coupling = 0.0
         for j in range(len(connected)):
-            c_y = basis_coeff_map.get(int(conn_hashes[j]), 0.0)
+            c_y = basis_coeff_map.get(conn_hashes[j], 0.0)
             if c_y != 0.0:
                 coupling += float(h_elements[j]) * c_y
 
