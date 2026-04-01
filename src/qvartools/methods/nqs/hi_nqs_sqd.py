@@ -240,7 +240,7 @@ def _train_nqs_teacher(
         )
     if energy_weight > 0 and hamiltonian is not None:
         with torch.no_grad():
-            diag_e = hamiltonian.diagonal_elements_batch(configs_dev)
+            diag_e = hamiltonian.diagonal_elements_batch(configs_dev).to(device)
             e0_approx = float((weights_t * diag_e).sum())
             if math.isfinite(e0_approx):
                 advantage_t = (diag_e - e0_approx).float()

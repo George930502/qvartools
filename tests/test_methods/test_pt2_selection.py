@@ -405,7 +405,7 @@ class TestRunHiNqsSqdPT2Integration:
 class TestCIPSISparsefallback:
     """Test CIPSI uses sparse diag when basis exceeds threshold."""
 
-    def test_cipsi_uses_sparse_for_large_basis(self, h2_hamiltonian):
+    def test_cipsi_uses_sparse_for_large_basis(self, h2_hamiltonian, monkeypatch):
         """When basis > threshold, CIPSI should call build_sparse_hamiltonian."""
         from unittest.mock import MagicMock, patch
 
@@ -413,9 +413,8 @@ class TestCIPSISparsefallback:
 
         original_build = h2_hamiltonian.build_sparse_hamiltonian
         spy = MagicMock(side_effect=original_build)
-        h2_hamiltonian.build_sparse_hamiltonian = spy
+        monkeypatch.setattr(h2_hamiltonian, "build_sparse_hamiltonian", spy)
 
-        # Monkeypatch threshold to 1 so H2 (4 configs) triggers sparse
         with patch("qvartools.solvers.subspace.cipsi._SPARSE_DIAG_THRESHOLD", 1):
             solver = CIPSISolver(max_iterations=2, expansion_size=2)
             result = solver.solve(h2_hamiltonian, {"name": "test"})
@@ -426,14 +425,23 @@ class TestCIPSISparsefallback:
             "build_sparse_hamiltonian was not called when basis > threshold"
         )
 
-        # Restore original
-        h2_hamiltonian.build_sparse_hamiltonian = original_build
+    def test_cipsi_sparse_energy_matches_dense(self, h2_hamiltonian):
+        """Sparse and dense CIPSI paths should give the same energy on H2."""
+        from unittest.mock import patch
 
-    def test_cipsi_dense_and_sparse_match(self, h2_hamiltonian):
-        """Dense and sparse paths should give the same energy."""
         from qvartools.solvers.subspace.cipsi import CIPSISolver
 
+        # Dense path (default threshold = 10K, H2 basis always < 10K)
         solver = CIPSISolver(max_iterations=3, expansion_size=5)
-        result = solver.solve(h2_hamiltonian, {"name": "test"})
-        # H2 is small enough for dense, just verify it works
-        assert result.energy is not None
+        dense_result = solver.solve(h2_hamiltonian, {"name": "test"})
+
+        # Sparse path (force threshold to 1)
+        with patch("qvartools.solvers.subspace.cipsi._SPARSE_DIAG_THRESHOLD", 1):
+            sparse_result = solver.solve(h2_hamiltonian, {"name": "test"})
+
+        assert dense_result.energy is not None
+        assert sparse_result.energy is not None
+        assert abs(dense_result.energy - sparse_result.energy) < 1e-8, (
+            f"Dense ({dense_result.energy}) vs Sparse ({sparse_result.energy}) "
+            f"differ by {abs(dense_result.energy - sparse_result.energy):.2e}"
+        )
