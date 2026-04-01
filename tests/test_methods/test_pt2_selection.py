@@ -383,6 +383,7 @@ class TestRunHiNqsSqdPT2Integration:
             final_temperature=0.5,
         )
 
+        torch.manual_seed(42)
         mock_return = (-1.0, np.array([1.0]), (np.array([0.5]), np.array([0.5])))
         with patch(
             "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
