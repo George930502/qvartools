@@ -131,9 +131,9 @@ class HINQSSQDConfig:
     teacher_weight : float
         Weight for the KL-divergence teacher loss term (default ``1.0``).
     energy_weight : float
-        Weight for the REINFORCE energy loss term (default ``0.1``).
+        Weight for the REINFORCE energy loss term (default ``0.0``).
     entropy_weight : float
-        Weight for the entropy regularisation term (default ``0.05``).
+        Weight for the entropy regularisation term (default ``0.0``).
     """
 
     n_iterations: int = 10

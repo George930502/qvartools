@@ -400,8 +400,6 @@ class TestRunHiNqsSqdPT2Integration:
 # P4: CIPSI sparse fallback
 # ---------------------------------------------------------------------------
 
-_CIPSI_SPARSE_THRESHOLD = 10_000
-
 
 @pytest.mark.pyscf
 class TestCIPSISparsefallback:
