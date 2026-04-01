@@ -518,26 +518,33 @@ def run_hi_nqs_sqd(
         best_energy = min(best_energy, iter_energy)
 
         # --- Coefficient-based eviction (when PT2 is on) ---
-        if (
-            cfg.use_pt2_selection
-            and best_coeffs is not None
-            and cumulative_basis.shape[0] > cfg.max_basis_size
-        ):
-            # Coefficients may not cover full cumulative_basis if batching
-            # was used; evict from best_batch_configs which has matching coeffs
-            if best_batch_configs is not None and best_batch_configs.shape[0] == len(
-                best_coeffs
-            ):
-                best_batch_configs, best_coeffs = evict_by_coefficient(
-                    best_batch_configs, best_coeffs, cfg.max_basis_size
-                )
-                cumulative_basis = best_batch_configs
-                logger.info("  evicted to %d configs", cumulative_basis.shape[0])
+        # ASCI pattern: diagonalise the FULL cumulative basis to get
+        # coefficients for every config, then keep highest |c_i|².
+        if cfg.use_pt2_selection and cumulative_basis.shape[0] > cfg.max_basis_size:
+            n_full = cumulative_basis.shape[0]
+            if n_full <= 50_000:
+                h_full = hamiltonian.matrix_elements_fast(cumulative_basis)
+                h_np = h_full.detach().cpu().numpy().astype(np.float64)
+                h_np = 0.5 * (h_np + h_np.T)
+                _, evecs = np.linalg.eigh(h_np)
+                full_coeffs = evecs[:, 0]
+            else:
+                from scipy.sparse.linalg import eigsh as sp_eigsh
+
+                h_sp = hamiltonian.build_sparse_hamiltonian(cumulative_basis)
+                _, evecs = sp_eigsh(h_sp.tocsr(), k=1, which="SA")
+                full_coeffs = evecs[:, 0]
+            cumulative_basis, _ = evict_by_coefficient(
+                cumulative_basis, full_coeffs, cfg.max_basis_size
+            )
+            logger.info(
+                "  evicted to %d configs (full-basis diag)", cumulative_basis.shape[0]
+            )
 
         # --- Update persistent eigenvector state for next iteration's PT2 ---
         if best_coeffs is not None and best_batch_configs is not None:
-            prev_coeffs = best_coeffs
-            prev_batch_configs = best_batch_configs
+            prev_coeffs = best_coeffs.copy()
+            prev_batch_configs = best_batch_configs.clone()
             prev_energy = best_batch_energy
 
         # --- Update occupancies ---
@@ -587,6 +594,13 @@ def run_hi_nqs_sqd(
                     break
             else:
                 converge_count = 0
+
+    if not converged:
+        logger.warning(
+            "HI+NQS+SQD did not converge after %d iterations (best=%.8f)",
+            cfg.n_iterations,
+            best_energy,
+        )
 
     wall_time = time.perf_counter() - t_start
 

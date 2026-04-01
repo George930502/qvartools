@@ -406,10 +406,14 @@ class TestCIPSISparsefallback:
     """Test CIPSI uses sparse diag when basis exceeds threshold."""
 
     def test_cipsi_uses_sparse_for_large_basis(self, h2_hamiltonian):
-        """When basis > threshold, CIPSI should use build_sparse_hamiltonian."""
-        from unittest.mock import patch
+        """When basis > threshold, CIPSI should call build_sparse_hamiltonian."""
+        from unittest.mock import MagicMock, patch
 
         from qvartools.solvers.subspace.cipsi import CIPSISolver
+
+        original_build = h2_hamiltonian.build_sparse_hamiltonian
+        spy = MagicMock(side_effect=original_build)
+        h2_hamiltonian.build_sparse_hamiltonian = spy
 
         # Monkeypatch threshold to 1 so H2 (4 configs) triggers sparse
         with patch("qvartools.solvers.subspace.cipsi._SPARSE_DIAG_THRESHOLD", 1):
@@ -418,6 +422,12 @@ class TestCIPSISparsefallback:
 
         assert result.energy is not None
         assert result.method == "CIPSI"
+        assert spy.called, (
+            "build_sparse_hamiltonian was not called when basis > threshold"
+        )
+
+        # Restore original
+        h2_hamiltonian.build_sparse_hamiltonian = original_build
 
     def test_cipsi_dense_and_sparse_match(self, h2_hamiltonian):
         """Dense and sparse paths should give the same energy."""
