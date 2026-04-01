@@ -156,8 +156,8 @@ class HINQSSQDConfig:
     initial_temperature: float = 1.0
     final_temperature: float = 0.3
     teacher_weight: float = 1.0
-    energy_weight: float = 0.1
-    entropy_weight: float = 0.05
+    energy_weight: float = 0.0
+    entropy_weight: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +233,11 @@ def _train_nqs_teacher(
 
     # Precompute energy advantage if needed
     advantage_t: torch.Tensor | None = None
+    if energy_weight > 0 and hamiltonian is None:
+        logger.warning(
+            "energy_weight=%.3f but hamiltonian is None; energy term disabled",
+            energy_weight,
+        )
     if energy_weight > 0 and hamiltonian is not None:
         with torch.no_grad():
             diag_e = hamiltonian.diagonal_elements_batch(configs_dev)
@@ -383,6 +388,9 @@ def run_hi_nqs_sqd(
     best_energy = float("inf")
     converged = False
     converge_count = 0
+    # Persistent eigenvector state for PT2 scoring across iterations
+    prev_coeffs: np.ndarray | None = None
+    prev_batch_configs: torch.Tensor | None = None
 
     for iteration in range(cfg.n_iterations):
         logger.info("HI+NQS+SQD iteration %d / %d", iteration + 1, cfg.n_iterations)
@@ -417,14 +425,17 @@ def run_hi_nqs_sqd(
         if (
             cfg.use_pt2_selection
             and unique_new.shape[0] > 0
-            and best_energy < float("inf")
+            and prev_coeffs is not None
+            and prev_batch_configs is not None
         ):
             scores = compute_pt2_scores(
-                unique_new, cumulative_basis, best_coeffs, hamiltonian, best_energy
+                unique_new, prev_batch_configs, prev_coeffs, hamiltonian, best_energy
             )
             n_keep = min(cfg.pt2_top_k, unique_new.shape[0])
-            top_indices = np.argsort(scores)[::-1][:n_keep].copy()
-            unique_new = unique_new[top_indices]
+            top_idx = torch.tensor(
+                np.argsort(scores)[::-1][:n_keep].copy(), dtype=torch.long
+            )
+            unique_new = unique_new[top_idx]
             logger.info(
                 "  PT2 filtered: %d → %d configs (top_k=%d)",
                 len(scores),
@@ -507,13 +518,23 @@ def run_hi_nqs_sqd(
         if (
             cfg.use_pt2_selection
             and best_coeffs is not None
-            and best_batch_configs is not None
-            and best_batch_configs.shape[0] > cfg.max_basis_size
+            and cumulative_basis.shape[0] > cfg.max_basis_size
         ):
-            cumulative_basis, best_coeffs = evict_by_coefficient(
-                best_batch_configs, best_coeffs, cfg.max_basis_size
-            )
+            # Coefficients may not cover full cumulative_basis if batching
+            # was used; evict from best_batch_configs which has matching coeffs
+            if best_batch_configs is not None and best_batch_configs.shape[0] == len(
+                best_coeffs
+            ):
+                best_batch_configs, best_coeffs = evict_by_coefficient(
+                    best_batch_configs, best_coeffs, cfg.max_basis_size
+                )
+                cumulative_basis = best_batch_configs
             logger.info("  evicted to %d configs", cumulative_basis.shape[0])
+
+        # --- Update persistent eigenvector state for next iteration's PT2 ---
+        if best_coeffs is not None and best_batch_configs is not None:
+            prev_coeffs = best_coeffs
+            prev_batch_configs = best_batch_configs
 
         # --- Update occupancies ---
         if isinstance(latest_occs, tuple) and len(latest_occs) == 2:

@@ -49,11 +49,11 @@ class TestHINQSSQDConfigPT2Fields:
 
     def test_energy_weight_default(self):
         cfg = HINQSSQDConfig()
-        assert cfg.energy_weight == 0.1
+        assert cfg.energy_weight == 0.0
 
     def test_entropy_weight_default(self):
         cfg = HINQSSQDConfig()
-        assert cfg.entropy_weight == 0.05
+        assert cfg.entropy_weight == 0.0
 
     def test_frozen(self):
         cfg = HINQSSQDConfig()

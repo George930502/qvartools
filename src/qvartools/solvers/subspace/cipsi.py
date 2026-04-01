@@ -98,8 +98,10 @@ class CIPSISolver(Solver):
         ----------
         hamiltonian : MolecularHamiltonian
             Hamiltonian exposing ``get_hf_state()``, ``matrix_elements_fast()``,
-            ``get_connections()``, ``diagonal_element()``, and
-            ``diagonal_elements_batch()``.
+            ``get_connections()``, ``diagonal_element()``,
+            ``diagonal_elements_batch()``, and ``build_sparse_hamiltonian()``
+            (the latter only needed when the basis exceeds
+            ``_SPARSE_DIAG_THRESHOLD``).
         mol_info : dict
             Molecular metadata (unused, kept for API compatibility).
 
