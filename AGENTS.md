@@ -257,7 +257,7 @@ qvartools/
 │   │       └── lucj_sampler.py       # LUCJSampler (Qiskit + ffsim LUCJ circuit)
 │   │
 │   ├── molecules/                # Molecular system registry
-│   │   └── registry.py           # MOLECULE_REGISTRY (24 molecules: 12 full-space + 12 CAS), get_molecule, list_molecules
+│   │   └── registry.py           # MOLECULE_REGISTRY (26 molecules: 12 full-space + 14 CAS), get_molecule, list_molecules
 │   │
 │   ├── _ext/                     # Experimental GPU extensions
 │   │   ├── __init__.py
@@ -455,7 +455,7 @@ Stage 1: Train Flow + NQS          Stage 2: Basis Selection         Stage 3: Sub
 
 ## 4. Molecule Registry
 
-24 pre-configured molecular benchmarks (12 full-space + 12 CAS active-space) accessible via `get_molecule(name)`:
+26 pre-configured molecular benchmarks (12 full-space + 14 CAS active-space) accessible via `get_molecule(name)`:
 
 **Full-space molecules (4--28 qubits)**
 
@@ -474,7 +474,7 @@ Stage 1: Train Flow + NQS          Stage 2: Basis Selection         Stage 3: Sub
 | H2S | 26 | sto-3g | bent |
 | C2H4 | 28 | sto-3g | planar |
 
-**CAS active-space molecules (24--58 qubits)**
+**CAS active-space molecules (24--72 qubits)**
 
 | Name | Qubits | Basis Set | Active Space |
 |------|--------|-----------|--------------|
@@ -490,6 +490,8 @@ Stage 1: Train Flow + NQS          Stage 2: Basis Selection         Stage 3: Sub
 | Cr2-CAS(12,26) | 52 | cc-pvdz | 12e, 26o |
 | Cr2-CAS(12,28) | 56 | cc-pvdz | 12e, 28o |
 | Cr2-CAS(12,29) | 58 | cc-pvdz | 12e, 29o |
+| Cr2-CAS(12,32) | 64 | cc-pvdz | 12e, 32o |
+| Cr2-CAS(12,36) | 72 | cc-pvdz | 12e, 36o |
 
 ---
 
@@ -763,6 +765,14 @@ The `_ext/` subpackage is **experimental and optional**. `sbd_subprocess` requir
 ### SQD Cartesian Product Expansion
 
 When `SQDConfig.use_cartesian_product=True` (default), SQD splits sampled configs into alpha/beta spin strings via `split_spin_strings()`, then enumerates all alpha×beta pairs via `cartesian_product_configs()`. This dramatically improves basis coverage for molecular Hamiltonians.
+
+### IBM `solve_fermion` Energy Convention
+
+IBM's `qiskit_addon_sqd.fermion.solve_fermion` returns **electronic energy only** (no nuclear repulsion). Always add `hamiltonian.integrals.nuclear_repulsion` to the result. Its `sci_state.amplitudes` is **2D** (n_alpha_strs × n_beta_strs), not 1D — use α/β marginals for NQS teacher weights.
+
+### S-CORE is for Quantum Hardware Only
+
+`recover_configurations` (S-CORE) in `qiskit_addon_sqd` is a noise-recovery technique for noisy quantum hardware samples. **Do not use it for classical NQS samples** — it adds massive overhead (NH₃: 1.5 hr → 5 s without it) with no accuracy benefit on clean samples.
 
 ---
 

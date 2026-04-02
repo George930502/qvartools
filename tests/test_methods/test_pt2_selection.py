@@ -257,6 +257,36 @@ class TestTrainNqsTeacher3TermLoss:
         assert len(losses) == 2
         assert all(isinstance(v, float) for v in losses)
 
+    def test_energy_weight_without_hamiltonian_raises(self, h2_hamiltonian):
+        """energy_weight > 0 with hamiltonian=None must raise ValueError."""
+        from qvartools.methods.nqs.hi_nqs_sqd import _train_nqs_teacher
+        from qvartools.nqs.transformer.autoregressive import AutoregressiveTransformer
+
+        ham = h2_hamiltonian
+        n_orb = ham.integrals.n_orbitals
+        nqs = AutoregressiveTransformer(
+            n_orbitals=n_orb,
+            n_alpha=ham.integrals.n_alpha,
+            n_beta=ham.integrals.n_beta,
+            embed_dim=16,
+            n_heads=2,
+            n_layers=1,
+        )
+        configs = ham.get_hf_state().unsqueeze(0)
+        coeffs = np.array([1.0])
+
+        with pytest.raises(ValueError, match="energy_weight.*requires hamiltonian"):
+            _train_nqs_teacher(
+                nqs,
+                configs,
+                coeffs,
+                n_orb,
+                lr=1e-3,
+                epochs=1,
+                energy_weight=0.1,
+                hamiltonian=None,
+            )
+
     def test_backward_compat_defaults(self, h2_hamiltonian):
         """Without new kwargs, behavior is unchanged (teacher-only loss)."""
         from qvartools.methods.nqs.hi_nqs_sqd import _train_nqs_teacher
@@ -324,9 +354,12 @@ class TestRunHiNqsSqdPT2Integration:
         )
 
         mock_return = (-1.0, np.array([1.0]), (np.array([0.5]), np.array([0.5])))
-        with patch(
-            "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
-            return_value=mock_return,
+        with (
+            patch("qvartools.methods.nqs.hi_nqs_sqd._IBM_SQD_AVAILABLE", False),
+            patch(
+                "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
+                return_value=mock_return,
+            ),
         ):
             result = run_hi_nqs_sqd(h2_hamiltonian, minimal_mol_info, config=cfg)
         assert result.method == "HI+NQS+SQD"
@@ -385,9 +418,12 @@ class TestRunHiNqsSqdPT2Integration:
 
         torch.manual_seed(42)
         mock_return = (-1.0, np.array([1.0]), (np.array([0.5]), np.array([0.5])))
-        with patch(
-            "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
-            return_value=mock_return,
+        with (
+            patch("qvartools.methods.nqs.hi_nqs_sqd._IBM_SQD_AVAILABLE", False),
+            patch(
+                "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
+                return_value=mock_return,
+            ),
         ):
             result = run_hi_nqs_sqd(h2_hamiltonian, minimal_mol_info, config=cfg)
 

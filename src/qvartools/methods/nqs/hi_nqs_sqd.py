@@ -230,9 +230,9 @@ def _train_nqs_teacher(
     # Precompute energy advantage if needed
     advantage_t: torch.Tensor | None = None
     if energy_weight > 0 and hamiltonian is None:
-        logger.warning(
-            "energy_weight=%.3f but hamiltonian is None; energy term disabled",
-            energy_weight,
+        raise ValueError(
+            f"energy_weight={energy_weight} requires hamiltonian to be provided, "
+            "but got hamiltonian=None"
         )
     if energy_weight > 0 and hamiltonian is not None:
         with torch.no_grad():
