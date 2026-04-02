@@ -54,16 +54,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 try:
-    from qiskit_addon_sqd.configuration_recovery import (
-        recover_configurations,  # type: ignore[import-untyped]
-    )
     from qiskit_addon_sqd.fermion import (
         solve_fermion as ibm_solve_fermion,  # type: ignore[import-untyped]
     )
 
     _IBM_SQD_AVAILABLE = True
 except ImportError:
-    recover_configurations = None  # type: ignore[assignment]
     ibm_solve_fermion = None  # type: ignore[assignment]
     _IBM_SQD_AVAILABLE = False
 
@@ -478,22 +474,20 @@ def run_hi_nqs_sqd(
             else:
                 batch_configs = cumulative_basis
 
-            # Optional IBM configuration recovery
+            # IBM solve_fermion with α×β Cartesian product expansion
             if _IBM_SQD_AVAILABLE and use_ibm:
                 ibm_data = configs_to_ibm_format(batch_configs, n_orb, n_qubits)
-                n_samples = ibm_data.shape[0]
-                uniform_probs = np.ones(n_samples) / n_samples
-                refined_matrix, _ = recover_configurations(
-                    ibm_data,
-                    uniform_probs,
-                    (occ_alpha, occ_beta),
-                    num_elec_a=n_alpha,
-                    num_elec_b=n_beta,
-                )
+                # Skip recover_configurations (S-CORE) — it's designed for noisy
+                # quantum hardware samples, not clean classical NQS samples.
+                # PR #30's best results used "no rescore" mode (no S-CORE).
+                # spin_sq = s(s+1) where s = spin/2. Default 0 = singlet.
+                _spin = mol_info.get("spin", 0)
+                _spin_sq = (_spin / 2) * (_spin / 2 + 1) if _spin else 0
                 e_b, sci_state, occs_b, _ = ibm_solve_fermion(
-                    refined_matrix,
+                    ibm_data,
                     hcore=hamiltonian.integrals.h1e,
                     eri=hamiltonian.integrals.h2e,
+                    spin_sq=_spin_sq,
                 )
                 # sci_state.amplitudes is 2D (n_alpha_strs × n_beta_strs).
                 # Build per-config weights from α/β marginals for NQS teacher.
