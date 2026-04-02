@@ -489,7 +489,29 @@ def run_hi_nqs_sqd(
                     hcore=hamiltonian.integrals.h1e,
                     eri=hamiltonian.integrals.h2e,
                 )
-                coeffs_b = sci_state.amplitudes
+                # sci_state.amplitudes is 2D (n_alpha_strs × n_beta_strs).
+                # Build per-config weights from α/β marginals for NQS teacher.
+                # batch_configs stays unchanged (original sampled configs).
+                amps_2d = np.abs(sci_state.amplitudes) ** 2
+                alpha_marginal = amps_2d.sum(axis=1)  # sum over beta
+                beta_marginal = amps_2d.sum(axis=0)  # sum over alpha
+                alpha_marginal /= max(alpha_marginal.sum(), 1e-30)
+                beta_marginal /= max(beta_marginal.sum(), 1e-30)
+
+                # Map each sampled config to a teacher weight via marginals
+                ci_a = sci_state.ci_strs_a
+                ci_b = sci_state.ci_strs_b
+                a_map = {int(s): float(v) for s, v in zip(ci_a, alpha_marginal)}
+                b_map = {int(s): float(v) for s, v in zip(ci_b, beta_marginal)}
+
+                coeffs_b = np.zeros(batch_configs.shape[0], dtype=np.float64)
+                for i in range(batch_configs.shape[0]):
+                    cfg_np = batch_configs[i].cpu().numpy()
+                    a_int = sum(int(cfg_np[k]) << k for k in range(n_orb))
+                    b_int = sum(int(cfg_np[k + n_orb]) << k for k in range(n_orb))
+                    coeffs_b[i] = np.sqrt(a_map.get(a_int, 0.0) * b_map.get(b_int, 0.0))
+                # solve_fermion returns electronic energy; add nuclear repulsion
+                e_b = float(e_b) + float(hamiltonian.integrals.nuclear_repulsion)
             else:
                 e_b, coeffs_b, occs_b = gpu_solve_fermion(batch_configs, hamiltonian)
 
