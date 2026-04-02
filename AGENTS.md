@@ -781,9 +781,12 @@ IBM's `qiskit_addon_sqd.fermion.solve_fermion` returns **electronic energy only*
 ### GitHub Actions
 
 **CI Pipeline** (`.github/workflows/ci.yml`):
-- **Lint job:** `ruff format --check` + `ruff check` on Python 3.11
-- **Test job:** `pytest` on Python 3.10, 3.11, 3.12 with `[dev,pyscf]` extras
-- Excludes `gpu` marker tests
+- **Lint job:** `ruff format --check` + `ruff check` on Python 3.11, pip cached
+- **Typecheck job:** `mypy` on core modules (informational)
+- **Smoke job:** Verifies 26+ molecules registered + all public modules importable
+- **Test job:** `pytest` on Python 3.10, 3.11, 3.12 with `[dev,pyscf]` extras; coverage only on 3.11 (`--cov-fail-under=40`); excludes `gpu` marker
+- **Docs job:** Sphinx build check on PRs (warns but doesn't block)
+- **Global:** `concurrency: cancel-in-progress` cancels superseded runs; `fail-fast: false`
 
 **Docs Pipeline** (`.github/workflows/docs.yml`):
 - Sphinx build on push to main
