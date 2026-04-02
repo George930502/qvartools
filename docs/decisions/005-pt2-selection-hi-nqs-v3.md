@@ -201,6 +201,18 @@ role.  Extending PT2 to SKQD is a future enhancement.
 - Coefficient-based eviction may discard configs that become important later
 - Temperature annealing schedule may need per-system tuning
 
+### Validation Results (2026-04-02)
+
+HI-NQS IBM (5K samples/iter) vs SCI (CIPSI, natural convergence, Numba):
+
+| System | HI-NQS Energy | SCI Energy | Diff | HI-NQS Time | SCI Time |
+|--------|--------------|------------|------|-------------|----------|
+| C2H2 24Q | **-76.02457** | -76.02453 | HI-NQS wins 0.46 mHa | **456s** | 1,088s |
+| N2 40Q | -109.1844 | **-109.2132** | SCI wins 28.8 mHa | **20 min** | 3h45m |
+
+Conclusion: HI-NQS exceeds SCI at 24Q; at 40Q, systematic H-connection expansion
+(Issue #35 Tier 1) is needed to close the 28.8 mHa gap.
+
 ---
 
 ## References
