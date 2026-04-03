@@ -604,6 +604,84 @@ class TestEPT2Integration:
 
         assert "e_pt2" not in result.metadata
 
+    def test_metadata_contains_pt2_e0_and_wall_time(
+        self, h2_hamiltonian, minimal_mol_info
+    ):
+        """Metadata should include pt2_e0 (full-basis energy) and wall time."""
+        from unittest.mock import patch
+
+        from qvartools.methods.nqs.hi_nqs_sqd import run_hi_nqs_sqd
+
+        cfg = HINQSSQDConfig(
+            n_iterations=2,
+            n_samples_per_iter=10,
+            n_batches=1,
+            nqs_train_epochs=1,
+            embed_dim=16,
+            n_heads=2,
+            n_layers=1,
+            compute_pt2_correction=True,
+        )
+
+        def mock_solver(batch_configs, hamiltonian):
+            n = batch_configs.shape[0]
+            coeffs = np.zeros(n)
+            coeffs[0] = 1.0
+            return (-1.0, coeffs, (np.array([0.5]), np.array([0.5])))
+
+        with (
+            patch("qvartools.methods.nqs.hi_nqs_sqd._IBM_SQD_AVAILABLE", False),
+            patch(
+                "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
+                side_effect=mock_solver,
+            ),
+        ):
+            result = run_hi_nqs_sqd(h2_hamiltonian, minimal_mol_info, config=cfg)
+
+        assert "pt2_e0" in result.metadata, "metadata missing pt2_e0"
+        assert "pt2_wall_time" in result.metadata, "metadata missing pt2_wall_time"
+        assert isinstance(result.metadata["pt2_e0"], float)
+        assert result.metadata["pt2_wall_time"] >= 0
+
+    def test_corrected_energy_uses_pt2_e0(self, h2_hamiltonian, minimal_mol_info):
+        """corrected_energy must equal pt2_e0 + e_pt2, NOT best_energy + e_pt2."""
+        from unittest.mock import patch
+
+        from qvartools.methods.nqs.hi_nqs_sqd import run_hi_nqs_sqd
+
+        cfg = HINQSSQDConfig(
+            n_iterations=2,
+            n_samples_per_iter=10,
+            n_batches=1,
+            nqs_train_epochs=1,
+            embed_dim=16,
+            n_heads=2,
+            n_layers=1,
+            compute_pt2_correction=True,
+        )
+
+        def mock_solver(batch_configs, hamiltonian):
+            n = batch_configs.shape[0]
+            coeffs = np.zeros(n)
+            coeffs[0] = 1.0
+            return (-1.0, coeffs, (np.array([0.5]), np.array([0.5])))
+
+        with (
+            patch("qvartools.methods.nqs.hi_nqs_sqd._IBM_SQD_AVAILABLE", False),
+            patch(
+                "qvartools.methods.nqs.hi_nqs_sqd.gpu_solve_fermion",
+                side_effect=mock_solver,
+            ),
+        ):
+            result = run_hi_nqs_sqd(h2_hamiltonian, minimal_mol_info, config=cfg)
+
+        if "e_pt2" in result.metadata:
+            expected = result.metadata["pt2_e0"] + result.metadata["e_pt2"]
+            assert abs(result.metadata["corrected_energy"] - expected) < 1e-12, (
+                f"corrected_energy ({result.metadata['corrected_energy']}) != "
+                f"pt2_e0 ({result.metadata['pt2_e0']}) + e_pt2 ({result.metadata['e_pt2']})"
+            )
+
 
 # ---------------------------------------------------------------------------
 # P4: CIPSI sparse fallback
