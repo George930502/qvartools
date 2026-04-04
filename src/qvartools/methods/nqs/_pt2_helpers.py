@@ -153,13 +153,19 @@ def compute_e_pt2(
     float
         E_PT2 correction (typically negative).
     """
+    if coeffs.shape[0] != basis.shape[0]:
+        raise ValueError(
+            f"coeffs length ({coeffs.shape[0]}) must match basis size "
+            f"({basis.shape[0]})"
+        )
+
     basis_hash_list = config_integer_hash(basis)
     basis_hash_set: set = set(basis_hash_list)
 
-    # Accumulate coupling ⟨x|H|Ψ₀⟩ for each external determinant x
-    # and collect H_xx for the denominator.
+    # Accumulate coupling ⟨x|H|Ψ₀⟩ for each external determinant x.
+    # Store config tensors temporarily for batched diagonal computation.
     external_coupling: dict = {}  # hash -> coupling
-    external_config: dict = {}  # hash -> config tensor (for H_xx lookup)
+    external_config: dict = {}  # hash -> config tensor
 
     for idx in range(basis.shape[0]):
         c_i = float(coeffs[idx])
@@ -175,7 +181,6 @@ def compute_e_pt2(
             h_conn = conn_hashes[j]
             if h_conn in basis_hash_set:
                 continue
-            # Accumulate coupling: ⟨x|H|Ψ₀⟩ += H_xy * c_y
             contrib = float(h_elements[j]) * c_i
             if h_conn in external_coupling:
                 external_coupling[h_conn] += contrib
@@ -183,16 +188,27 @@ def compute_e_pt2(
                 external_coupling[h_conn] = contrib
                 external_config[h_conn] = connections[j].detach().clone()
 
+    if not external_coupling:
+        return 0.0
+
+    # Batched diagonal computation (much faster than per-config calls)
+    ext_hashes = list(external_coupling.keys())
+    ext_configs = torch.stack([external_config[h] for h in ext_hashes])
+    h_diag = hamiltonian.diagonal_elements_batch(ext_configs)
+    h_diag_np = h_diag.detach().cpu().numpy().astype(np.float64)
+
+    # Free config tensor memory now that we have H_xx values
+    del external_config, ext_configs
+
     # Compute E_PT2 = Σ coupling² / (e0 - H_xx)
     e_pt2 = 0.0
-    for h_ext, coupling in external_coupling.items():
-        config = external_config[h_ext]
-        h_xx = float(hamiltonian.diagonal_element(config))
+    for k, h_ext in enumerate(ext_hashes):
+        h_xx = float(h_diag_np[k])
         if not math.isfinite(h_xx):
             continue
+        coupling = external_coupling[h_ext]
         denom = e0 - h_xx
         if abs(denom) < 1e-14:
-            # Intruder state: clamp denominator to avoid division by zero
             sign = -1.0 if denom <= 0 else 1.0
             denom = sign * 1e-14
             logger.debug("Near-zero PT2 denominator clamped for hash %s", h_ext)
