@@ -135,7 +135,9 @@ class HINQSSQDConfig:
     compute_pt2_correction : bool
         Compute EN-PT2 energy correction after final iteration
         (default ``False``).  When ``True``, ``metadata`` includes
-        ``e_pt2`` and ``corrected_energy = energy + e_pt2``.
+        ``e_pt2`` and ``corrected_energy = pt2_e0 + e_pt2``, where
+        ``pt2_e0`` is the full-basis diagonalisation energy used for the
+        PT2 correction (distinct from the main returned ``energy`` value).
     """
 
     n_iterations: int = 10
@@ -658,7 +660,7 @@ def run_hi_nqs_sqd(
         t_pt2 = time.perf_counter()
         # Full-basis diag to get consistent (E₀, Ψ₀) for E_PT2
         n_full = cumulative_basis.shape[0]
-        if n_full <= 50_000:
+        if n_full <= 8_000:  # Align with CIPSI _SPARSE_DIAG_THRESHOLD
             h_full = hamiltonian.matrix_elements_fast(cumulative_basis)
             h_np = h_full.detach().cpu().numpy().astype(np.float64)
             h_np = 0.5 * (h_np + h_np.T)

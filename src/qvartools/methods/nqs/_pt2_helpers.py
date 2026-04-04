@@ -181,7 +181,7 @@ def compute_e_pt2(
                 external_coupling[h_conn] += contrib
             else:
                 external_coupling[h_conn] = contrib
-                external_config[h_conn] = connections[j]
+                external_config[h_conn] = connections[j].detach().clone()
 
     # Compute E_PT2 = Σ coupling² / (e0 - H_xx)
     e_pt2 = 0.0
@@ -192,7 +192,10 @@ def compute_e_pt2(
             continue
         denom = e0 - h_xx
         if abs(denom) < 1e-14:
-            continue
+            # Intruder state: clamp denominator to avoid division by zero
+            sign = -1.0 if denom <= 0 else 1.0
+            denom = sign * 1e-14
+            logger.debug("Near-zero PT2 denominator clamped for hash %s", h_ext)
         e_pt2 += coupling**2 / denom
 
     return e_pt2
